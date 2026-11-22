@@ -1,6 +1,6 @@
 # WorthIt: Spec
 
-**Is your situationship worth it?** · #2 of 33 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style · Source: Owner's idea
+**Is your situationship worth it?** · #2 of 32 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style · Source: Owner's idea
 
 ## One-liner
 

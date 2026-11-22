@@ -2,7 +2,7 @@
 
 **Is your situationship worth it?**
 
-> #2 of 33 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style
+> #2 of 32 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style
 > **Owner's idea · phase 1 very easy, phase 2 harder**
 
 ## What it is
@@ -88,5 +88,5 @@ Planning. The build spec is in [`docs/SPEC.md`](docs/SPEC.md).
 
 ---
 
-Part of a portfolio of 33 small consumer apps that share one codebase, one retention module
+Part of a portfolio of 32 small consumer apps that share one codebase, one retention module
 and one marketing and upkeep system ([growth-maintenance-engine](https://github.com/tadagambura/growth-maintenance-engine)).
