@@ -37,7 +37,7 @@ A non-conventional dating app that helps you build better relationships instead 
 | Phase 2 | Profile extras: score insights, verification badge |
 | Ads | Never on the result or coach screens |
 
-Prices are starting points; test before committing.
+Prices are starting points; test before committing. **Portfolio premium promise:** free has ads; the moment you pay you get no ads, cloud backup and storage, and sync across your devices, plus this app's extras.
 
 ## Retention: The Progression Loop
 
@@ -72,6 +72,7 @@ cheapest model, shared budget cap, premium-gated.)
 
 - **Platform:** Phase 1: Expo app, notes on the device, plus a small shared AI proxy for the coach. Phase 2: accounts, QR linking, and a backend (Supabase).
 - **Data:** Phase 1: notes stay on the device; only nicknames and answers go to the AI, never real names. Phase 2: data about another person is only linked to their profile after they consent in person, by scanning or tapping.
+- **Backend:** AI proxy for the coach (premium). Shared data for phase 2 linking. Premium backup and sync use the shared portfolio backend (see the master repo's HOSTING.md).
 - **Stack:** shared portfolio foundation (Expo, PostHog, RevenueCat, AdMob, shared Progression Loop module).
 
 ## Growth engine
