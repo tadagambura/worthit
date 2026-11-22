@@ -62,13 +62,15 @@ Built on **The Progression Loop**, the portfolio's shared retention framework
 | Next step | When something ends: a 'what did you learn' recap and a fresh start |
 | Cadence | Several times a week |
 
-## Animation and tone
+## Animation and tone: five signature animations
 
-**Full drama.** Duolingo-style theatrics: characters, big over-the-top reactions, sound effects, comic tragedy ('NOOOOOOO!!!! NOT CYPHICUS!!!!').
+**Full drama.** Duolingo-style theatrics: characters, big over-the-top reactions, sound effects. Thirsty's plant death is the only animation that takes over the full screen ('NOOOOOOO!!!! NOT CYPHICUS!!!!').
 
-- Game-show score reveal with drumroll and spotlight
-- Low score: red-flag sirens and 'RED FLAG ALERT' banner; high score: fireworks and wedding bells
-- The AI coach character gasps and spills its tea at a juicy answer
+- Low score: red-flag sirens and the stickman ducks behind the sofa
+- High score: wedding bells, and two stickmen do a slow-motion run at each other (and miss)
+- Asking the coach: the coach sips its tea, then does a spit-take at a juicy answer
+- Adding someone new: a detective stickman inspects a fingerprint with a magnifying glass
+- Ending a situationship: the stickman dramatically shuts a door, then a tiny 'NEXT!' sign pops up
 
 **Line we don't cross:** Comedy aims at the situation, never at the real person: no mocking names, looks or anything personal. Low scores are funny, not cruel.
 
