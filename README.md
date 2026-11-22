@@ -87,4 +87,4 @@ Planning. The build spec is in [`docs/SPEC.md`](docs/SPEC.md).
 ---
 
 Part of a portfolio of 33 small consumer apps that share one codebase, one retention module
-and one marketing system ([growth-engine](https://github.com/tadagambura/growth-engine)).
+and one marketing and upkeep system ([growth-maintenance-engine](https://github.com/tadagambura/growth-maintenance-engine)).
