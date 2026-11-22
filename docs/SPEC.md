@@ -53,6 +53,16 @@ Prices are starting points; test before committing.
 Follow the portfolio guardrails: no guilt-trip notifications, no fake urgency, progress is
 never wiped, at most one notification a day by default.
 
+## Animation and tone
+
+**Full drama.** Duolingo-style theatrics: characters, big over-the-top reactions, sound effects, comic tragedy ('NOOOOOOO!!!! NOT CYPHICUS!!!!').
+
+- Game-show score reveal with drumroll and spotlight
+- Low score: red-flag sirens and 'RED FLAG ALERT' banner; high score: fireworks and wedding bells
+- The AI coach character gasps and spills its tea at a juicy answer
+
+**Line we don't cross:** Comedy aims at the situation, never at the real person: no mocking names, looks or anything personal. Low scores are funny, not cruel.
+
 ## AI
 
 **Core.** AI coach. Ask 'What's Jason worth?' and it reads your own notes and form answers about that person and gives a balanced view: their strengths, the concerns, how they complement you, and questions worth asking them. Nicknames only are sent, never real names. Premium-gated so the AI cost is covered. (Portfolio rule: plain code first, code does the maths,
