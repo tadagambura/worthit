@@ -1,0 +1,22 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      # Run the gitleaks binary directly: the gitleaks-action fails on a repo's first
+      # push (it diffs against the root commit's non-existent parent).
+      - name: Install gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz \
+            | tar xz -C "$RUNNER_TEMP" gitleaks
+      - name: Scan full git history for secrets
+        run: '"$RUNNER_TEMP/gitleaks" git --redact --verbose .'

@@ -1,0 +1,29 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.keystore
+*.jks
+client_secret*.json
+*service-account*.json
+google-services.json
+GoogleService-Info.plist
+
+# Dependencies / build
+node_modules/
+dist/
+build/
+.next/
+.expo/
+coverage/
+__pycache__/
+*.pyc
+.venv/
+
+# OS / editor
+.DS_Store
+*.swp
+.vscode/
+.idea/
