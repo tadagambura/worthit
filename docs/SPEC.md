@@ -1,41 +1,41 @@
 # WorthIt: Spec
 
-**Is your situationship worth it?** · #2 of 33 in the build order · Very easy · Revenue potential: Medium–high · Social, Play & Style · Source: Owner's idea
+**Is your situationship worth it?** · #2 of 33 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style · Source: Owner's idea
 
 ## One-liner
 
-Phase 1: rank your situationships. Answer a short qualitative form about each one (communication, consistency, effort, respect, how they make you feel, red and green flags, signs of a future) and WorthIt scores and ranks them, so you can see which one is genuinely worth it. Phase 2: the Worth It Score, a consent-based digital dating identity. People who opt in get a profile, add friends, and connect with people they've actually dated; their score is built from feedback those confirmed connections submit. So when someone says 'I want to commit to you, but what's your Worth It score?', you can share it.
+A non-conventional dating app that helps you build better relationships instead of just handing you more people. Phase 1 is private: keep notes on the people you're seeing (like a Notes app), rate each situationship with a short qualitative form, and see them ranked by how genuinely worth it they are. Ask the AI coach 'What's Jason worth?' and get a balanced take: his strengths, the concerns, how he complements you, and what to watch for. Phase 2 links real people with consent: two people scan each other's QR code (or tap phones where supported), their profiles link, and the ratings each has written about the other attach to the linked profile. That builds a Worth It Score you can share when someone asks 'what's your Worth It score?'
 
 ## Problem / audience
 
 - **Who it's for:** 18–30s dating in the app era, especially anyone in, or just out of, a situationship.
 - **The problem it solves:** People stay in situationships too long because they can't step back and judge them clearly. And when someone wants to commit, there's no way to know how they've treated the people they dated before.
-- **Example:** A user ranks three situationships, sees that the one they've been holding on to scores lowest on consistency and effort, and shares the card in the group chat. Later, in phase 2, someone asks 'what's your Worth It score?' before committing, and they share their verified score.
+- **Example:** A user keeps notes on two people they're seeing, rates both, and asks the coach 'What's Jason worth?'. It points out he's consistent and supportive but avoids plans, and suggests asking him directly. Later, in phase 2, they and Jason scan each other's QR codes, their profiles link, and when Jason asks 'what's your Worth It score?' they share it.
 
 ## MVP features (ship with only these)
 
-1. Add situationships by nickname only (no real names or photos in phase 1)
+1. Private people notes (nicknames only), kept on the device like a Notes app
 2. Qualitative form: communication, consistency, effort, respect, how they make you feel, red and green flags, signs of a future
-3. A Worth It score for each one, and a ranked list
-4. Shareable result card ('My situationship scored 38/100. Not worth it.')
-5. Re-check over time: is it getting better or worse?
+3. A Worth It score for each person, and a ranked list
+4. AI coach: 'What's Jason worth?' gives a balanced view and questions to ask (premium)
+5. Shareable result card ('My situationship scored 38/100. Not worth it.')
 
 ## Not in MVP
 
-- Phase 2: opt-in profiles and friends
-- Mutual confirmation: both people confirm they dated before either can rate the other
-- Your Worth It Score, built only from confirmed connections and shown only after a minimum number of ratings, with outliers dampened
+- Phase 2: profiles, linked by scanning each other's QR code (NFC tap where the phone allows it)
+- On linking, both people consent, and the ratings each wrote about the other attach to the linked profile
+- Worth It Score shown only after a minimum number of linked ratings, with outliers dampened
+- Private notes stay private unless the author chooses to share them; the linked person can see what's attached and respond
 - Share your score like a credit score: private by default, you choose who sees it
-- Right of reply, reporting, and moderated free text
 
 ## Monetisation
 
 | Model | Detail |
 |---|---|
-| Free | Rank up to 3 situationships, with ads |
-| Premium | £2.99/month: unlimited, deeper breakdowns, trends over time, premium cards |
+| Free | Notes and ranking for up to 3 people, with ads |
+| Premium | £3.99/month: unlimited people, AI coach, deeper breakdowns, trends over time, premium cards |
 | Phase 2 | Profile extras: score insights, verification badge |
-| Ads | Never on the result screen |
+| Ads | Never on the result or coach screens |
 
 Prices are starting points; test before committing.
 
@@ -43,20 +43,25 @@ Prices are starting points; test before committing.
 
 | Stage | Design |
 |---|---|
-| Cue | Weekly 'how's it going?' check-in on each active situationship |
-| Tiny win | A 20-second check-in |
-| Progress | Score trend over time; the ranking shifts |
+| Cue | Weekly 'how's it going?' check-in on each person |
+| Tiny win | A 20-second check-in, or ask the coach a question |
+| Progress | Score trends over time; the ranking shifts |
 | Share | Result and ranking cards |
-| Next step | When one ends: a 'what did you learn' recap and a fresh start |
-| Cadence | Weekly |
+| Next step | When something ends: a 'what did you learn' recap and a fresh start |
+| Cadence | Several times a week |
 
 Follow the portfolio guardrails: no guilt-trip notifications, no fake urgency, progress is
 never wiped, at most one notification a day by default.
 
+## AI
+
+**Core.** AI coach. Ask 'What's Jason worth?' and it reads your own notes and form answers about that person and gives a balanced view: their strengths, the concerns, how they complement you, and questions worth asking them. Nicknames only are sent, never real names. Premium-gated so the AI cost is covered. (Portfolio rule: plain code first, code does the maths,
+cheapest model, shared budget cap, premium-gated.)
+
 ## Platform & data
 
-- **Platform:** Phase 1: Expo app plus web share links, no accounts. Phase 2: accounts, a backend (Supabase), verification and moderation.
-- **Data:** Phase 1: on the device only, nicknames only. Phase 2: holds personal data about other people, so it needs consent, verification and a privacy review.
+- **Platform:** Phase 1: Expo app, notes on the device, plus a small shared AI proxy for the coach. Phase 2: accounts, QR linking, and a backend (Supabase).
+- **Data:** Phase 1: notes stay on the device; only nicknames and answers go to the AI, never real names. Phase 2: data about another person is only linked to their profile after they consent in person, by scanning or tapping.
 - **Stack:** shared portfolio foundation (Expo, PostHog, RevenueCat, AdMob, shared Progression Loop module).
 
 ## Growth engine
@@ -66,7 +71,7 @@ never wiped, at most one notification a day by default.
 
 ## Risks
 
-Phase 2 is the riskiest feature in the portfolio. Scoring real people can be used for revenge ratings, harassment or defamation, and apps that tried versions of this (Peeple, Lulu, Tea) ran into backlash, app-store problems, legal threats or data breaches. So phase 2 must be consent-first: only people who opt in get a score; only mutually confirmed connections can rate; scores appear only after enough ratings, with outliers dampened; the rated person can see and respond; no ratings of appearance or sex; free text is moderated. It also needs ongoing moderation and support, which breaks the portfolio's low-maintenance rule, and a UK GDPR and app-store policy review before it's built. Phase 1 has none of these problems.
+Phase 1 is low-risk: it's private note-taking. The AI coach must send nicknames only, use a provider that doesn't keep or train on the data, and give balanced views rather than verdicts on real people. Phase 2 is much safer with in-person QR consent, but still needs: a way for the linked person to see and respond to what's attached, a minimum number of ratings before any score shows, protection against an ex rating in bad faith after linking, moderation of anything shared publicly, and a UK GDPR and app-store review before launch. Phone-to-phone NFC between iPhones is limited for third-party apps, so QR codes come first.
 
 ## Launch checklist
 
