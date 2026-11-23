@@ -3,6 +3,7 @@ import { addDays, addMonths, diffDays, isDayKey, range, startOfWeek, weekday } f
 import { formatGBP, parseGBP, splitEvenly, toInput } from '../money';
 import { computeStreak, streakMessage } from '../streak';
 import { contrast, makePalettes, THEMES } from '../themes';
+import { optionOrder } from '../cards';
 
 describe('dates', () => {
   test('adds days across month, year and BST boundaries', () => {
@@ -138,4 +139,11 @@ describe('themes', () => {
       expect(contrast(p.accentText, p.accent)).toBeGreaterThanOrEqual(4.5);
     }
   });
+});
+
+test('quiz options are shuffled per card, stably, as a permutation', () => {
+  expect(optionOrder('c01', 3)).toEqual(optionOrder('c01', 3));
+  expect([...optionOrder('c07', 3)].sort()).toEqual([0, 1, 2]);
+  const firsts = new Set(Array.from({ length: 30 }, (_, i) => optionOrder(`c${i}`, 3)[0]));
+  expect(firsts.size).toBe(3);
 });
