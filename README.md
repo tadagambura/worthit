@@ -2,12 +2,12 @@
 
 **Is your situationship worth it?**
 
-> #2 of 31 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style
+> #2 of 16 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style
 > **Owner's idea · phase 1 very easy, phase 2 harder**
 
 ## What it is
 
-A non-conventional dating app that helps you build better relationships instead of just handing you more people. Phase 1 is private: keep notes on the people you're seeing (like a Notes app), rate each situationship with a short qualitative form, and see them ranked by how genuinely worth it they are. Ask the AI coach 'What's Jason worth?' and get a balanced take: his strengths, the concerns, how he complements you, and what to watch for. Phase 2 links real people with consent: two people scan each other's QR code (or tap phones where supported), their profiles link, and the ratings each has written about the other attach to the linked profile. That builds a Worth It Score you can share when someone asks 'what's your Worth It score?'
+A non-conventional dating app that helps you build better relationships instead of just handing you more people. Phase 1 is private: keep notes on the people you're seeing (like a Notes app), rate each situationship with a short qualitative form, and see them ranked by how genuinely worth it they are. Ask the AI coach 'What's Jason worth?' and get a balanced take: his strengths, the concerns, how he complements you, and what to watch for. No public scores of real people, ever: it rates behaviours and how you feel, privately.
 
 ## Why it's in the portfolio
 
@@ -31,11 +31,9 @@ A non-conventional dating app that helps you build better relationships instead 
 
 ## Later
 
-- Phase 2: profiles, linked by scanning each other's QR code (NFC tap where the phone allows it)
-- On linking, both people consent, and the ratings each wrote about the other attach to the linked profile
-- Worth It Score shown only after a minimum number of linked ratings, with outliers dampened
-- Private notes stay private unless the author chooses to share them; the linked person can see what's attached and respond
-- Share your score like a credit score: private by default, you choose who sees it
+- Compatibility quizzes and self result cards (from TypeMe)
+- Patterns across your own situationships over time
+- Premium coach packs (attachment styles, red flags)
 
 ## How it makes money
 
@@ -80,7 +78,7 @@ Built on **The Progression Loop**, the portfolio's shared retention framework
 
 ## Watch-outs
 
-Phase 1 is low-risk: it's private note-taking. The AI coach must send nicknames only, use a provider that doesn't keep or train on the data, and give balanced views rather than verdicts on real people. Phase 2 is much safer with in-person QR consent, but still needs: a way for the linked person to see and respond to what's attached, a minimum number of ratings before any score shows, protection against an ex rating in bad faith after linking, moderation of anything shared publicly, and a UK GDPR and app-store review before launch. Phone-to-phone NFC between iPhones is limited for third-party apps, so QR codes come first.
+Rating real people publicly is what got Peeple, Lulu and Tea into trouble and what Apple removes (guidelines 1.2, 5.1.1(viii), 5.1.2), so the QR 'Worth It Score' is cut. Notes stay private on the device; the AI coach gets nicknames only, from a provider that doesn't keep or train on data, and gives balanced views rather than verdicts.
 
 ## Status
 
@@ -88,5 +86,5 @@ Planning. The build spec is in [`docs/SPEC.md`](docs/SPEC.md).
 
 ---
 
-Part of a portfolio of 31 small consumer apps that share one codebase, one retention module
+Part of a portfolio of 16 small consumer apps that share one codebase, one retention module
 and one marketing and upkeep system ([growth-maintenance-engine](https://github.com/tadagambura/growth-maintenance-engine)).
