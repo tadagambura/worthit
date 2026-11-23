@@ -1,4 +1,4 @@
-# WorthIt
+# WorthIt?
 
 **Is your situationship worth it?**
 
@@ -40,7 +40,7 @@ A non-conventional dating app that helps you build better relationships instead 
 | Model | Detail |
 |---|---|
 | Free | Notes and ranking for up to 3 people, with ads |
-| Premium | £3.99/month: unlimited people, AI coach, deeper breakdowns, trends over time, premium cards |
+| Premium | £24.99/year (shown first) or £3.49/month: unlimited people, AI coach, deeper breakdowns, trends over time, premium cards |
 | Phase 2 | Profile extras: score insights, verification badge |
 | Ads | Never on the result or coach screens |
 
@@ -51,7 +51,7 @@ A non-conventional dating app that helps you build better relationships instead 
 Built on **The Progression Loop**, the portfolio's shared retention framework
 (streaks with forgiveness, visible progress, milestones, recaps, no guilt-trips).
 
-| Stage | In WorthIt |
+| Stage | In WorthIt? |
 |---|---|
 | Cue | Weekly 'how's it going?' check-in on each person |
 | Tiny win | A 20-second check-in, or ask the coach a question |

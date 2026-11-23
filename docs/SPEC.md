@@ -1,4 +1,4 @@
-# WorthIt: Spec
+# WorthIt?: Spec
 
 **Is your situationship worth it?** · #2 of 15 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style · Source: Owner's idea
 
@@ -31,7 +31,7 @@ A non-conventional dating app that helps you build better relationships instead 
 | Model | Detail |
 |---|---|
 | Free | Notes and ranking for up to 3 people, with ads |
-| Premium | £3.99/month: unlimited people, AI coach, deeper breakdowns, trends over time, premium cards |
+| Premium | £24.99/year (shown first) or £3.49/month: unlimited people, AI coach, deeper breakdowns, trends over time, premium cards |
 | Phase 2 | Profile extras: score insights, verification badge |
 | Ads | Never on the result or coach screens |
 
