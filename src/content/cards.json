@@ -1,0 +1,641 @@
+{
+  "pack": "worthit-cards-1",
+  "version": 1,
+  "checked": "2026-11-23",
+  "reviewed": false,
+  "cards": [
+    {
+      "id": "c01",
+      "topic": "Anxious vs secure",
+      "title": "The 'they've gone quiet' spiral",
+      "body": "Left on read and suddenly planning your own heartbreak? That's often an anxious attachment pattern: a strong fear that people will leave, usually learned early in life. Relate says signs include a racing heart, an uneasy stomach and jumping to the worst case. It isn't a character flaw. Secure feels different: calmer, able to wait, able to ask.",
+      "quiz": {
+        "q": "According to Relate, which can be a sign of an anxious attachment style?",
+        "options": [
+          "Feeling calm when a reply takes a while",
+          "Catastrophising when something goes wrong in the relationship",
+          "Never wanting reassurance"
+        ],
+        "answer": 1,
+        "explain": "Relate lists a racing heart, an uneasy stomach and catastrophising as possible signs. Noticing the pattern is the first step to calming it."
+      },
+      "source": {
+        "name": "Relate: How to deal with anxiety in anxiously attached relationships",
+        "url": "https://www.relate.org.uk/get-help/how-deal-anxiety-anxiously-attached-relationships"
+      },
+      "tags": [
+        "attachment",
+        "anxiety",
+        "self-awareness"
+      ]
+    },
+    {
+      "id": "c02",
+      "topic": "Anxious vs secure",
+      "title": "Fact or just a thought?",
+      "body": "When the worry starts shouting, try one question Relate suggests: is this a fact, or a thought? \"They haven't replied in three hours\" is a fact. \"They're losing interest\" is a thought. Then look for evidence that doesn't fit the scary story. Be kind to yourself while you do it. Telling yourself off for feeling anxious usually just adds a second layer of anxiety.",
+      "quiz": {
+        "q": "What's the question Relate suggests asking when anxious thoughts kick in?",
+        "options": [
+          "Is this a fact or a thought?",
+          "Who can I blame for this?",
+          "How fast can I double-text?"
+        ],
+        "answer": 0,
+        "explain": "Separating facts from thoughts helps you challenge worst-case stories and find a more balanced view."
+      },
+      "source": {
+        "name": "Relate: How to deal with anxiety in anxiously attached relationships",
+        "url": "https://www.relate.org.uk/get-help/how-deal-anxiety-anxiously-attached-relationships"
+      },
+      "tags": [
+        "attachment",
+        "anxiety",
+        "self-talk"
+      ]
+    },
+    {
+      "id": "c03",
+      "topic": "Words vs actions",
+      "title": "Watch the pattern, not the promise",
+      "body": "Lovely words are free. Patterns cost effort. Relate suggests giving people a bit of time to show who they really are, rather than judging on one date. That works both ways: time reveals the good stuff, and it also reveals whether \"I'll call you\" ever turns into a call. If what someone says and what they do keep drifting apart, believe the doing.",
+      "quiz": null,
+      "source": {
+        "name": "Relate: The pitfalls of dating",
+        "url": "https://www.relate.org.uk/get-help/pitfalls-dating"
+      },
+      "tags": [
+        "words vs actions",
+        "early dating",
+        "consistency"
+      ]
+    },
+    {
+      "id": "c04",
+      "topic": "Breadcrumbing",
+      "title": "Crumbs are not a meal",
+      "body": "Breadcrumbing is getting just enough attention (a flirty message, a late-night \"hey\") to keep you hooked, but never enough to build anything. A 2020 study of 626 adults found people who'd been breadcrumbed reported lower life satisfaction and more loneliness and helplessness. It was a snapshot, so it can't prove cause, but it's a fair hint: crumbs can leave you hungrier.",
+      "quiz": {
+        "q": "What best describes breadcrumbing?",
+        "options": [
+          "Planning regular dates well in advance",
+          "Ending things clearly and kindly",
+          "Sending occasional flirty signals with no real commitment"
+        ],
+        "answer": 2,
+        "explain": "Breadcrumbing keeps someone interested with small, irregular bits of attention but no follow-through. In one study it was linked with lower wellbeing."
+      },
+      "source": {
+        "name": "Navarro et al. (2020), Psychological correlates of ghosting and breadcrumbing experiences, Int J Environ Res Public Health",
+        "url": "https://www.mdpi.com/1660-4601/17/3/1116"
+      },
+      "tags": [
+        "breadcrumbing",
+        "mixed signals",
+        "self-worth"
+      ]
+    },
+    {
+      "id": "c05",
+      "topic": "Mixed signals",
+      "title": "Stop decoding, start asking",
+      "body": "Hours spent analysing one emoji with your group chat? The School of Life suggests that a lot of romantic \"games\" come from fear: we hide what we feel and hope the other person guesses. The braver move is to say what you mean, politely and soon. Asking plainly isn't needy. It saves you a part-time job as a cryptographer.",
+      "quiz": null,
+      "source": {
+        "name": "Inspired by The School of Life, 'Why We Play Games in Love'",
+        "url": "https://www.theschooloflife.com/article/why-we-play-games-in-love/"
+      },
+      "tags": [
+        "mixed signals",
+        "communication",
+        "school of life"
+      ]
+    },
+    {
+      "id": "c06",
+      "topic": "Asking for clarity",
+      "title": "The 'what are we?' chat",
+      "body": "It can feel scarier than a dentist appointment, but Relate's advice is to talk about what you each mean by commitment rather than sliding along and hoping. One of you might mean \"exclusive\", the other \"seeing where it goes\". Try: \"I'm enjoying this. I'd like to know if we're on the same page about where it's heading.\" Their answer is information, whatever it is.",
+      "quiz": {
+        "q": "Why does Relate suggest talking about commitment early?",
+        "options": [
+          "You may each mean something different by it",
+          "It guarantees the relationship lasts",
+          "It's the only way to seem keen"
+        ],
+        "answer": 0,
+        "explain": "Partners can see the relationship's seriousness very differently. Talking about it helps you avoid sliding into something one of you doesn't want."
+      },
+      "source": {
+        "name": "Relate: Are you ready to take your relationship to the next level?",
+        "url": "https://www.relate.org.uk/get-help/are-you-ready-take-your-relationship-next-level"
+      },
+      "tags": [
+        "clarity",
+        "commitment",
+        "communication"
+      ]
+    },
+    {
+      "id": "c07",
+      "topic": "Boundaries",
+      "title": "Boundaries are a door, not a wall",
+      "body": "A boundary is simply what's OK and not OK for you: how much time you spend together, how fast things move, how you like to be spoken to. Relate points out that people often assume they want the same amount of togetherness, and don't. Talking about it early helps avoid resentment later. Boundaries protect the relationship as well as you.",
+      "quiz": null,
+      "source": {
+        "name": "Relate: Are you ready to take your relationship to the next level?",
+        "url": "https://www.relate.org.uk/get-help/are-you-ready-take-your-relationship-next-level"
+      },
+      "tags": [
+        "boundaries",
+        "self-respect"
+      ]
+    },
+    {
+      "id": "c08",
+      "topic": "Boundaries",
+      "title": "How to say it without a fight",
+      "body": "Gottman's \"gentle start-up\" works beautifully for boundaries. Ask yourself two things: what am I feeling, and what do I need? Then say it with \"I\", not \"you\". Not \"You're always on your phone\", but \"I feel a bit sidelined when phones come out at dinner. Could we keep them away?\" Clear, kind, no blame. A good partner can hear that.",
+      "quiz": {
+        "q": "What does a 'gentle start-up' focus on?",
+        "options": [
+          "Listing everything they've done wrong",
+          "Your own feelings and needs, using 'I' statements",
+          "Waiting until you're furious"
+        ],
+        "answer": 1,
+        "explain": "Gottman's gentle start-up means raising an issue by naming what you feel and need, without blame, which keeps the other person listening."
+      },
+      "source": {
+        "name": "The Gottman Institute: The Four Horsemen, the antidotes",
+        "url": "https://www.gottman.com/blog/the-four-horsemen-the-antidotes/"
+      },
+      "tags": [
+        "boundaries",
+        "communication",
+        "gottman"
+      ]
+    },
+    {
+      "id": "c09",
+      "topic": "Flags",
+      "title": "Green flags look boring (good)",
+      "body": "Green flags rarely make a dramatic story. They look like: replying when they said they would, respecting a no, being the same person with your friends as with you, and responding when you reach out. Gottman's research found couples who turned towards each other's small bids for attention were far happier. Reliable kindness can feel less fizzy than chaos. It's still the good stuff.",
+      "quiz": null,
+      "source": {
+        "name": "The Gottman Institute: Turning towards each other",
+        "url": "https://www.gottman.com/blog/turning-towards-each-other-for-a-thriving-relationship/"
+      },
+      "tags": [
+        "green flags",
+        "healthy relationships",
+        "gottman"
+      ]
+    },
+    {
+      "id": "c10",
+      "topic": "Flags",
+      "title": "Yellow flags: pause, don't panic",
+      "body": "Not every wobble is a red flag. Nervous on a first date, terrible at texting, odd taste in films? Relate warns against writing people off over one small thing before they've had a chance to show who they are. A yellow flag means watch and ask. If the same worry keeps coming back, or grows, that's when it may be turning red.",
+      "quiz": null,
+      "source": {
+        "name": "Relate: The pitfalls of dating",
+        "url": "https://www.relate.org.uk/get-help/pitfalls-dating"
+      },
+      "tags": [
+        "yellow flags",
+        "early dating"
+      ]
+    },
+    {
+      "id": "c11",
+      "topic": "Flags",
+      "title": "Red flags you shouldn't explain away",
+      "body": "Refuge lists warning signs that deserve your full attention: jealousy and possessiveness, controlling what you wear or who you see, constant put-downs, pressure for sex, checking your phone or messages, and being charming one minute and frightening the next. If you notice you're tiptoeing around someone's moods, take that feeling seriously. It isn't you being dramatic.",
+      "quiz": {
+        "q": "Which of these does Refuge list as a warning sign?",
+        "options": [
+          "Wanting a night in alone sometimes",
+          "Disagreeing about which film to watch",
+          "Controlling who you see or what you wear"
+        ],
+        "answer": 2,
+        "explain": "Control over your choices, friends or appearance is a recognised warning sign of abuse. Healthy partners can disagree without controlling you."
+      },
+      "source": {
+        "name": "Refuge: Signs of domestic abuse",
+        "url": "https://refuge.org.uk/i-need-help-now/how-to-identify-abuse/"
+      },
+      "tags": [
+        "red flags",
+        "safety",
+        "abuse"
+      ]
+    },
+    {
+      "id": "c12",
+      "topic": "Love-bombing",
+      "title": "Too much, too soon",
+      "body": "Love-bombing is a flood of attention early on: over-the-top gifts, constant compliments, big promises, pressure to move fast. Women's Aid describes it as a tactic sometimes used by abusers at the start of a relationship that can later turn into control. Enthusiasm isn't automatically sinister. But if the pace feels like pressure and slowing down gets a sulk, notice that.",
+      "quiz": {
+        "q": "Why do Women's Aid say love-bombing matters?",
+        "options": [
+          "It can be used early on to set up control later",
+          "It proves someone is your soulmate",
+          "It only happens in films"
+        ],
+        "answer": 0,
+        "explain": "Women's Aid warns that excessive gifts, attention and promises can be an early tactic that later turns into abuse or control."
+      },
+      "source": {
+        "name": "Women's Aid: response to love bombing in CPS guidance (2023)",
+        "url": "https://womensaid.org.uk/womens-aid-responds-to-inclusion-of-love-bombing-in-cpss-guidance-on-abuse/"
+      },
+      "tags": [
+        "love-bombing",
+        "red flags",
+        "safety"
+      ]
+    },
+    {
+      "id": "c13",
+      "topic": "Healthy vs controlling",
+      "title": "Control isn't always loud",
+      "body": "Coercive control is a pattern, not one bad day. Women's Aid lists behaviours like cutting you off from friends and family, tracking your movements or phone, controlling money, constant belittling and threats. It doesn't need to involve violence to be abuse, and it's been a crime in England and Wales since 2015. \"Because I care\" is not a reason to monitor someone.",
+      "quiz": {
+        "q": "Since 2015, coercive control has been...",
+        "options": [
+          "Only an issue if there's violence",
+          "A criminal offence in England and Wales",
+          "A normal part of serious relationships"
+        ],
+        "answer": 1,
+        "explain": "Coercive control became a crime in England and Wales in 2015. It can be abuse even without physical violence."
+      },
+      "source": {
+        "name": "Women's Aid: What is coercive control?",
+        "url": "https://www.womensaid.org.uk/information-support/what-is-domestic-abuse/coercive-control/"
+      },
+      "tags": [
+        "coercive control",
+        "red flags",
+        "safety"
+      ]
+    },
+    {
+      "id": "c14",
+      "topic": "Healthy vs controlling",
+      "title": "Healthy or controlling? A quick check",
+      "body": "Healthy: you can say no, see your friends, and disagree without fear. Controlling: you're put down, cut off, watched, or you change how you act to avoid their reaction. The NHS lists feeling afraid of a partner, or changing your behaviour to keep the peace, as signs to take seriously. You don't need bruises to deserve help.",
+      "quiz": null,
+      "source": {
+        "name": "NHS: Domestic violence and abuse",
+        "url": "https://www.nhs.uk/live-well/getting-help-for-domestic-violence/"
+      },
+      "tags": [
+        "healthy relationships",
+        "abuse",
+        "safety"
+      ]
+    },
+    {
+      "id": "c15",
+      "topic": "Getting help",
+      "title": "Help is free, 24/7",
+      "body": "If a relationship feels frightening or controlling, the National Domestic Abuse Helpline, run by Refuge, is free and confidential on 0808 2000 247, 24 hours a day. You don't have to be sure it's \"bad enough\" to call. They also offer live chat and British Sign Language support. If you're in immediate danger, call 999.",
+      "quiz": {
+        "q": "What's the National Domestic Abuse Helpline number?",
+        "options": [
+          "0808 2000 247",
+          "111",
+          "0800 1111"
+        ],
+        "answer": 0,
+        "explain": "The National Domestic Abuse Helpline, run by Refuge, is free and open 24 hours a day on 0808 2000 247. In an emergency, call 999."
+      },
+      "source": {
+        "name": "National Domestic Abuse Helpline (run by Refuge)",
+        "url": "https://www.nationaldahelpline.org.uk/"
+      },
+      "tags": [
+        "help",
+        "domestic abuse",
+        "helpline"
+      ]
+    },
+    {
+      "id": "c16",
+      "topic": "Getting help",
+      "title": "Men and LGBT+ people get abused too",
+      "body": "Abuse doesn't care about gender or sexuality. The NHS points men to the Respect Men's Advice Line on 0808 801 0327. LGBT+ people can contact Galop on 0800 999 5428. Feeling embarrassed is common and understandable. It's also not a reason to struggle alone.",
+      "quiz": null,
+      "source": {
+        "name": "NHS: Domestic violence and abuse",
+        "url": "https://www.nhs.uk/live-well/getting-help-for-domestic-violence/"
+      },
+      "tags": [
+        "help",
+        "men",
+        "lgbt+",
+        "domestic abuse"
+      ]
+    },
+    {
+      "id": "c17",
+      "topic": "Chemistry vs compatibility",
+      "title": "Fizz isn't the same as fit",
+      "body": "That instant \"I know you\" feeling can be lovely, and it can also be a trap. The School of Life draws on a psychoanalytic idea: we're often drawn to people who feel familiar, including familiar ways of being let down. Chemistry tells you about your past. Compatibility (shared values, kindness, how you handle conflict) tells you about your future.",
+      "quiz": {
+        "q": "According to the School of Life idea, what might that strong instant attraction reflect?",
+        "options": [
+          "Guaranteed compatibility",
+          "A sign the stars have aligned",
+          "Familiar patterns, sometimes from childhood"
+        ],
+        "answer": 2,
+        "explain": "The idea is that we're drawn to the familiar, not always the healthy. Strong chemistry is worth noticing, but compatibility needs checking."
+      },
+      "source": {
+        "name": "Inspired by The School of Life, 'How We Choose a Partner'",
+        "url": "https://www.theschooloflife.com/article/how-we-choose-a-partner/"
+      },
+      "tags": [
+        "chemistry",
+        "compatibility",
+        "school of life"
+      ]
+    },
+    {
+      "id": "c18",
+      "topic": "Self-worth",
+      "title": "Talk to yourself like a mate",
+      "body": "Self-worth affects who you'll put up with. Mind suggests small, practical steps: celebrate small wins, write a list of things you like about yourself, practise saying no, spend time with people who make you feel good, and ask, \"Would I speak to a friend like this?\" You don't have to feel brilliant about yourself to deserve basic respect.",
+      "quiz": null,
+      "source": {
+        "name": "Mind: Tips to improve your self-esteem",
+        "url": "https://www.mind.org.uk/information-support/types-of-mental-health-problems/self-esteem/tips-to-improve-your-self-esteem/"
+      },
+      "tags": [
+        "self-worth",
+        "self-esteem",
+        "self-compassion"
+      ]
+    },
+    {
+      "id": "c19",
+      "topic": "Ending things",
+      "title": "Ending it kindly",
+      "body": "If it's not right, say so clearly rather than fading out. Be honest, keep it about your feelings rather than a list of their faults, and don't leave false hope with \"maybe one day\" if you don't mean it. Relate reminds us an ending isn't a failure: there can be good memories and lessons. If you feel unsafe, prioritise your safety over a perfect conversation.",
+      "quiz": {
+        "q": "Which fits Relate's view of a relationship ending?",
+        "options": [
+          "It means you failed",
+          "It can still hold good memories and a chance to grow",
+          "You should never talk about it"
+        ],
+        "answer": 1,
+        "explain": "Relate suggests not seeing a relationship that doesn't work out as a failure. There may be good memories and lessons to take forward."
+      },
+      "source": {
+        "name": "Relate: 80 relationship tips",
+        "url": "https://www.relate.org.uk/get-help/80-relationship-tips"
+      },
+      "tags": [
+        "ending things",
+        "kindness",
+        "breakups"
+      ]
+    },
+    {
+      "id": "c20",
+      "topic": "Love and expectations",
+      "title": "Nobody can read your mind",
+      "body": "The School of Life argues that the Romantic ideal of love sets us up badly: it promises a partner who understands us without words and makes all loneliness vanish. Real people can't do that. The more grown-up version of love involves explaining yourself, a lot, and being patient when they get it wrong. Less magic, more manual. Much better results.",
+      "quiz": {
+        "q": "What Romantic expectation does the School of Life challenge?",
+        "options": [
+          "That a partner should understand you without you having to say things",
+          "That kindness matters",
+          "That people should talk about money"
+        ],
+        "answer": 0,
+        "explain": "The idea is that expecting wordless understanding sets couples up for disappointment. Explaining ourselves is a normal, loving thing to do."
+      },
+      "source": {
+        "name": "Inspired by The School of Life, 'How Romanticism Ruined Love'",
+        "url": "https://www.theschooloflife.com/article/how-romanticism-ruined-love/"
+      },
+      "tags": [
+        "expectations",
+        "communication",
+        "school of life"
+      ]
+    },
+    {
+      "id": "c21",
+      "topic": "Chemistry vs compatibility",
+      "title": "Your 'ick' list is useful",
+      "body": "The School of Life suggests a curious exercise: write down the qualities that put you off in a date. You might find some are actually good things, like reliability or warmth, that just feel unfamiliar. If being treated well feels \"boring\", that's worth gently exploring. It might mean your love radar was calibrated a long time ago.",
+      "quiz": null,
+      "source": {
+        "name": "Inspired by The School of Life, 'How We Choose a Partner'",
+        "url": "https://www.theschooloflife.com/article/how-we-choose-a-partner/"
+      },
+      "tags": [
+        "chemistry",
+        "patterns",
+        "self-awareness",
+        "school of life"
+      ]
+    },
+    {
+      "id": "c22",
+      "topic": "Love and expectations",
+      "title": "Ditch the hunt for 'the one'",
+      "body": "Swiping can make it feel like a perfect person is out there if you just scroll long enough. Relate warns that this mix of endless choice and the old idea of \"the one\" can make us dismiss real people too quickly. Try going on a second date with someone who was nice but not instantly dazzling. People warm up.",
+      "quiz": {
+        "q": "What does Relate say about the idea of 'the one'?",
+        "options": [
+          "It's the best way to choose a partner",
+          "It's only a problem offline",
+          "It can make us write people off too quickly"
+        ],
+        "answer": 2,
+        "explain": "Relate warns that hunting for a perfect match can make us reject people before they've had a chance to show who they are."
+      },
+      "source": {
+        "name": "Relate: The pitfalls of dating",
+        "url": "https://www.relate.org.uk/get-help/pitfalls-dating"
+      },
+      "tags": [
+        "expectations",
+        "dating apps",
+        "early dating"
+      ]
+    },
+    {
+      "id": "c23",
+      "topic": "Self-worth",
+      "title": "The real prize: being known",
+      "body": "Compliments are nice, but the School of Life suggests what we really want is something deeper: to be known, flaws and all, and still liked. Someone who sees your grumpy, anxious, slightly ridiculous side and stays warm about it. If you feel you must be perfect to keep someone, that's a lot of pressure, and worth noticing.",
+      "quiz": null,
+      "source": {
+        "name": "Inspired by The School of Life, 'What We Really, Really Want in Love'",
+        "url": "https://www.theschooloflife.com/article/what-we-really-really-want-in-love/"
+      },
+      "tags": [
+        "self-worth",
+        "acceptance",
+        "school of life"
+      ]
+    },
+    {
+      "id": "c24",
+      "topic": "Anxious vs secure",
+      "title": "Ask for reassurance, cleverly",
+      "body": "Needing reassurance isn't shameful. Relate suggests letting a partner or friend know what's going on so they can help, and even agreeing a code, like a particular emoji that means \"I'm wobbling, a kind word would help\". It turns a guessing game into a quick, easy ask. Good people generally want to support you, whatever the anxious voice says.",
+      "quiz": {
+        "q": "What idea does Relate suggest for asking for reassurance?",
+        "options": [
+          "Testing them to see if they notice",
+          "Agreeing a simple signal, like an emoji",
+          "Never telling anyone"
+        ],
+        "answer": 1,
+        "explain": "Relate suggests sharing what's going on and agreeing a code, like an emoji, so asking for support is quick and clear."
+      },
+      "source": {
+        "name": "Relate: How to deal with anxiety in anxiously attached relationships",
+        "url": "https://www.relate.org.uk/get-help/how-deal-anxiety-anxiously-attached-relationships"
+      },
+      "tags": [
+        "attachment",
+        "anxiety",
+        "reassurance"
+      ]
+    },
+    {
+      "id": "c25",
+      "topic": "Anxious vs secure",
+      "title": "Calm the body first",
+      "body": "When anxiety spikes, your body often gets there before your thoughts: short breaths, tight chest, churning stomach. Relate suggests learning your own warning signs, then slowing your breathing right down, in and out, before you reply to anything. A calmer body makes for a calmer message. Nothing good was ever sent mid-panic at 2am.",
+      "quiz": null,
+      "source": {
+        "name": "Relate: How to deal with anxiety in anxiously attached relationships",
+        "url": "https://www.relate.org.uk/get-help/how-deal-anxiety-anxiously-attached-relationships"
+      },
+      "tags": [
+        "anxiety",
+        "self-soothing",
+        "breathing"
+      ]
+    },
+    {
+      "id": "c26",
+      "topic": "Mixed signals",
+      "title": "Sulking is a silent essay",
+      "body": "We tend to sulk with people we feel should just know what's wrong. The School of Life calls this a strangely hopeful act, but an unfair one: nobody can read the essay you haven't written. If something hurt, say so, briefly and calmly. \"That comment stung a bit\" beats three hours of one-word answers.",
+      "quiz": {
+        "q": "Why do we tend to sulk, according to the School of Life?",
+        "options": [
+          "Because we hope the other person will understand without us explaining",
+          "Because silence always solves things",
+          "Because we don't care"
+        ],
+        "answer": 0,
+        "explain": "Sulking often hides a hope that someone will read our minds. Explaining what hurt is kinder and far more effective."
+      },
+      "source": {
+        "name": "Inspired by The School of Life, 'Love and Sulking'",
+        "url": "https://www.theschooloflife.com/article/love-and-sulking/"
+      },
+      "tags": [
+        "communication",
+        "conflict",
+        "school of life"
+      ]
+    },
+    {
+      "id": "c27",
+      "topic": "Asking for clarity",
+      "title": "Decide, don't slide",
+      "body": "Relate notes how easy it is to slide into the next step, staying over, moving in, because it seems logical. Big steps go better when they're decisions, not accidents. Before you take one, talk about money, how much time together and apart you each want, and whether you both actually want it, not just because your friends are doing it.",
+      "quiz": null,
+      "source": {
+        "name": "Relate: Are you ready to take your relationship to the next level?",
+        "url": "https://www.relate.org.uk/get-help/are-you-ready-take-your-relationship-next-level"
+      },
+      "tags": [
+        "commitment",
+        "clarity",
+        "big decisions"
+      ]
+    },
+    {
+      "id": "c28",
+      "topic": "Early dating",
+      "title": "Dates don't have to be interviews",
+      "body": "Sitting opposite a stranger making eye contact for three hours is intense. Relate suggests easing the pressure by not treating every date as a test of whether you'll \"work\", and by choosing activity dates like a walk, a bike ride or a gallery. Something to do gives you something to talk about, and silences feel less awkward.",
+      "quiz": {
+        "q": "What does Relate suggest if dates feel pressured?",
+        "options": [
+          "Avoid dating completely",
+          "Plan an activity date, like a walk or gallery",
+          "Prepare a list of interview questions"
+        ],
+        "answer": 1,
+        "explain": "Doing something together takes the pressure off constant conversation and gives you natural things to talk about."
+      },
+      "source": {
+        "name": "Relate: The pitfalls of dating",
+        "url": "https://www.relate.org.uk/get-help/pitfalls-dating"
+      },
+      "tags": [
+        "early dating",
+        "date ideas",
+        "anxiety"
+      ]
+    },
+    {
+      "id": "c29",
+      "topic": "Conflict",
+      "title": "Say 'that hurt', not 'you're awful'",
+      "body": "When we're hurt, we often hit back or go cold, because admitting the hurt feels too exposed. The School of Life suggests the opposite: calmly saying you feel hurt, and maybe a bit scared, without attacking. It's neither grovelling nor fighting. It gives the other person a real chance to respond with care, and tells you a lot if they don't.",
+      "quiz": {
+        "q": "What's the alternative to hitting back that the School of Life suggests?",
+        "options": [
+          "Calmly saying you feel hurt",
+          "Pretending nothing happened",
+          "Winning the argument at all costs"
+        ],
+        "answer": 0,
+        "explain": "Naming your hurt calmly, without attacking, makes it easier for the other person to listen instead of defending themselves."
+      },
+      "source": {
+        "name": "Inspired by The School of Life, 'How to Argue in Relationships'",
+        "url": "https://www.theschooloflife.com/article/how-to-argue-in-relationships/"
+      },
+      "tags": [
+        "conflict",
+        "vulnerability",
+        "school of life"
+      ]
+    },
+    {
+      "id": "c30",
+      "topic": "Getting help",
+      "title": "Worried about your own behaviour?",
+      "body": "Healthy relationships take honesty about ourselves too. If you've noticed you're controlling, jealous, or frightening towards a partner and want to change, the NHS lists the Respect Phoneline on 0808 802 4040 for people worried about their own behaviour. Asking for help to stop is a strong, responsible thing to do.",
+      "quiz": null,
+      "source": {
+        "name": "NHS: Domestic violence and abuse",
+        "url": "https://www.nhs.uk/live-well/getting-help-for-domestic-violence/"
+      },
+      "tags": [
+        "help",
+        "accountability",
+        "domestic abuse"
+      ]
+    }
+  ]
+}
