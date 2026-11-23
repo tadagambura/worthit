@@ -1,6 +1,6 @@
 # WorthIt: Spec
 
-**Is your situationship worth it?** · #2 of 16 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style · Source: Owner's idea
+**Is your situationship worth it?** · #2 of 15 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style · Source: Owner's idea
 
 ## One-liner
 
@@ -22,7 +22,7 @@ A non-conventional dating app that helps you build better relationships instead 
 
 ## Not in MVP
 
-- Compatibility quizzes and self result cards (from TypeMe)
+- Compatibility quizzes and self result cards (from AfterHours)
 - Patterns across your own situationships over time
 - Premium coach packs (attachment styles, red flags)
 
