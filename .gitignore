@@ -27,3 +27,7 @@ __pycache__/
 *.swp
 .vscode/
 .idea/
+
+# Test output
+test-results/
+playwright-report/
