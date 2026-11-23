@@ -1,6 +1,6 @@
 # WorthIt?: Spec
 
-**Is your situationship worth it?** · #2 of 17 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style · Source: Owner's idea
+**Is your situationship worth it? Get out of your head and look at the pattern.** · #2 of 17 · Wave 1: Daily keepers · Used: Several times a week · Very easy · Revenue potential: Medium–high · Social, Play & Style · Source: Owner's idea
 
 ## One-liner
 
@@ -14,11 +14,12 @@ A non-conventional dating app that helps you build better relationships instead 
 
 ## MVP features (ship with only these)
 
-1. Private people notes (nicknames only), kept on the device like a Notes app
-2. Qualitative form: communication, consistency, effort, respect, how they make you feel, red and green flags, signs of a future
-3. A Worth It score for each person, and a ranked list
-4. AI coach: 'What's Jason worth?' gives a balanced view and questions to ask (premium)
-5. Shareable result card ('My situationship scored 38/100. Not worth it.')
+1. Private people notes (nicknames only), kept on the device
+2. 20-second check-ins: how you felt before and after, green, yellow and red flags, words versus actions, boundaries kept or crossed, private reflection
+3. The pattern over time, with a straight-talking headline. It never scores a person
+4. Questions worth asking, chosen from what's unclear
+5. A lovely pattern suggests AfterHours together
+6. Learning cards on dating, boundaries and red flags, inspired by The School of Life and evidence-based sources
 
 ## Not in MVP
 
@@ -55,11 +56,11 @@ never wiped, at most one notification a day by default.
 
 **Full drama.** Duolingo-style theatrics: characters, big over-the-top reactions, sound effects. Thirsty's plant death is the only animation that takes over the full screen ('NOOOOOOO!!!! NOT CYPHICUS!!!!').
 
-- Low score: red-flag sirens and the stickman ducks behind the sofa
-- High score: wedding bells, and two stickmen do a slow-motion run at each other (and miss)
+- Low score: red-flag sirens and Kaos ducks behind the sofa
+- High score: wedding bells, and Kaos and a friend do a slow-motion run at each other (and miss)
 - Asking the coach: the coach sips its tea, then does a spit-take at a juicy answer
-- Adding someone new: a detective stickman inspects a fingerprint with a magnifying glass
-- Ending a situationship: the stickman dramatically shuts a door, then a tiny 'NEXT!' sign pops up
+- Adding someone new: Kaos, as a detective, inspects a fingerprint with a magnifying glass
+- Ending a situationship: Kaos dramatically shuts a door, then a tiny 'NEXT!' sign pops up
 
 **Line we don't cross:** Comedy aims at the situation, never at the real person: no mocking names, looks or anything personal. Low scores are funny, not cruel.
 
