@@ -1,7 +1,9 @@
 // Kaotic Chainz app kit: generated copy. Edit in app-portfolio/kit, then run scripts/sync-kit.sh.
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { applyAppIcon } from './appIcon';
 import { prefsStore } from './prefs';
-import { palettesFor } from './themes';
+import { usePremiumOptional } from './premium';
+import { effectiveTheme, forcedScheme, palettesFor } from './themes';
 import { Platform, useColorScheme } from 'react-native';
 
 export type Palette = {
@@ -36,9 +38,12 @@ export type Brand = {
   defaultTheme: string;
   /** Corner radius used by cards and buttons. Part of each app's identity. */
   radius: number;
-  /** Premium plans as shown in test mode. In live mode, prices come from the store. */
-  plans: Plan[];
+  /** @deprecated Prices now live in plans.ts and come from the store. Ignored. */
+  plans?: Plan[];
+  /** What Premium adds in this app (the paywall's right-hand column). */
   premiumPerks: string[];
+  /** What stays free forever (the paywall's left-hand column). */
+  freeFeatures?: string[];
   privacyUrl: string;
   termsUrl: string;
   supportEmail: string;
@@ -46,7 +51,10 @@ export type Brand = {
 
 export type Theme = {
   brand: Brand;
+  /** The theme being shown (the chosen one, or the default if the choice needs Premium). */
   themeId: string;
+  /** What the person picked, kept even while it's locked so it comes back with Premium. */
+  chosenTheme: string | undefined;
   c: Palette;
   dark: boolean;
   radius: number;
@@ -58,25 +66,27 @@ const ThemeContext = createContext<Theme | null>(null);
 
 export function ThemeProvider({ brand, children }: { brand: Brand; children: ReactNode }) {
   const scheme = useColorScheme();
-  const dark = scheme === 'dark';
   const usePrefs = prefsStore(brand.slug);
   const chosen = usePrefs((s) => s.theme);
-  const themeId = chosen ?? brand.defaultTheme;
-  const theme = useMemo<Theme>(
-    () => {
-      const p = themeId === 'original' ? { light: brand.light, dark: brand.dark } : (palettesFor(themeId) ?? { light: brand.light, dark: brand.dark });
-      return {
+  const premium = usePremiumOptional()?.isPremium ?? false;
+  const themeId = effectiveTheme(chosen, brand.defaultTheme, premium);
+  const dark = (forcedScheme(themeId) ?? scheme) === 'dark';
+  useEffect(() => {
+    applyAppIcon(themeId, brand.defaultTheme);
+  }, [themeId, brand.defaultTheme]);
+  const theme = useMemo<Theme>(() => {
+    const p = palettesFor(themeId) ?? { light: brand.light, dark: brand.dark };
+    return {
       brand,
       themeId,
+      chosenTheme: chosen,
       c: dark ? p.dark : p.light,
       dark,
       radius: brand.radius,
       space: (n: number) => n * 4,
       font: { display: brand.fonts.display, body: Platform.OS === 'web' ? 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif' : undefined },
-      };
-    },
-    [brand, dark, themeId],
-  );
+    };
+  }, [brand, dark, themeId, chosen]);
   return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;
 }
 

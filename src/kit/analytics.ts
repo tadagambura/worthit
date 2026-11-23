@@ -25,6 +25,9 @@ export type EventName =
   | 'paywall_viewed'
   | 'subscription_started'
   | 'purchase_restored'
+  | 'purchase_failed'
+  | 'game_played'
+  | 'age_check_completed'
   | 'data_exported'
   | 'data_deleted'
   | 'error_shown';
