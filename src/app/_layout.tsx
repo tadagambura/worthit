@@ -31,8 +31,8 @@ function Shell() {
             cta="Let's see"
             onDone={() => usePrefs.getState().setOnboarded()}
             steps={[
-              { title: 'Is it worth it?', body: 'Keep private notes on who you are seeing, rate how it is really going, and see who is worth your time.', art: <Art>🕵️</Art> },
-              { title: 'Behaviours, not people', body: 'You rate how they treat you and how you feel. Never their looks, never anything public.', art: <Art>⚖️</Art> },
+              { title: 'Get out of your head', body: 'After you see them, do a 20-second check-in: how you felt before and after, the flags, words versus actions.', art: <Art>🕵️</Art> },
+              { title: 'Look at the pattern', body: 'WorthIt? shows the pattern over time, so you can see what is really going on. It never scores a person.', art: <Art>🧩</Art> },
               { title: 'Private by design', body: 'Nicknames only. Everything stays on this phone. No account, no uploads.', art: <Art>🔒</Art> },
             ]}
           />

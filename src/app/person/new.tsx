@@ -20,7 +20,8 @@ export default function NewPerson() {
     const id = usePeople.getState().add(nickname.trim(), emoji);
     track('core_action_completed', { what: 'person_added' });
     celebrate({ scene: 'detective', emoji: '🕵️', title: 'Case opened', body: 'The detective inspects the fingerprint. Now, how is it going?' });
-    router.replace(`/checkin?id=${id}`);
+    router.replace(`/person/${id}`);
+    router.push(`/checkin?id=${id}`);
   };
   return (
     <Screen edges={['bottom']} testID="person-new" footer={<Button title="Add and check in" onPress={save} testID="person-save" />}>

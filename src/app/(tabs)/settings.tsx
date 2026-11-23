@@ -7,7 +7,7 @@ export default function Settings() {
       <Section title="Privacy">
         <Card>
           <ListRow icon="lock-closed-outline" title="Everything stays on this phone" subtitle="Nicknames, notes and check-ins are never uploaded. There's no account and no public profile." />
-          <ListRow icon="people-outline" title="Fair to everyone" subtitle="WorthIt? rates behaviours and how you feel, never someone's looks or worth as a person." />
+          <ListRow icon="people-outline" title="Fair to everyone" subtitle="WorthIt? reflects patterns and your own feelings. It never scores a person, their looks or their worth." />
         </Card>
       </Section>
     </KitSettings>

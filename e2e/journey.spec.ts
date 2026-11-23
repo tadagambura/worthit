@@ -6,68 +6,71 @@ async function finishIntro(page: Page) {
   await expect(page.getByTestId('ranking')).toBeVisible();
 }
 
-async function addPerson(page: Page, name: string, rate: number) {
+async function addPerson(page: Page, name: string) {
   await page.getByTestId('add-person').first().click();
   await page.getByTestId('person-nickname').fill(name);
   await page.getByTestId('person-save').click();
   await expect(page.getByTestId('checkin')).toBeVisible();
-  for (const d of ['communication', 'consistency', 'effort', 'respect', 'feel', 'future']) await page.getByTestId(`rate-${d}-${rate}`).click();
+}
+
+async function goodCheckIn(page: Page) {
+  await page.getByTestId('before-3').click();
+  await page.getByTestId('after-5').click();
+  await page.getByTestId('green-Keeps their word').click();
+  await page.getByTestId('green-Makes plans ahead').click();
+  await page.getByTestId('said').fill('See you Friday');
+  await page.getByTestId('did').fill('Turned up early');
   await page.getByTestId('checkin-save').click();
   await expect(page.getByTestId('person')).toBeVisible();
 }
 
-test('add someone → check in → score, balanced take, ranking, and it persists', async ({ page }) => {
+test('check-ins build a pattern (never a score), and a lovely pattern suggests AfterHours', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
   await finishIntro(page);
-  await addPerson(page, 'Gym guy', 5);
-  await expect(page.getByTestId('person-score')).toHaveText('100');
-  await expect(page.getByTestId('take')).toContainText('Respect: respectful');
-
-  await page.goto('/');
-  await addPerson(page, 'Bumble Sam', 2);
-  await expect(page.getByTestId('person-score')).toHaveText('25');
-  await page.goto('/');
-  await expect(page.getByTestId('score-Gym guy')).toHaveText('100');
-  const order = await page.locator('[data-testid^="person-"]').allInnerTexts();
-  expect(order[0]).toContain('Gym guy');
+  await addPerson(page, 'Gym guy');
+  await goodCheckIn(page);
+  await expect(page.getByTestId('pattern-headline')).toContainText('Early days with Gym guy');
+  for (let i = 0; i < 2; i++) {
+    await page.getByTestId('person-checkin').click();
+    await goodCheckIn(page);
+  }
+  await expect(page.getByTestId('pattern-headline')).toContainText('Mostly green');
+  await expect(page.getByText('You usually feel better after time with them.')).toBeVisible();
+  await expect(page.getByTestId('afterhours-nudge')).toBeVisible();
+  await page.getByTestId('afterhours-dismiss').click();
+  await expect(page.getByTestId('afterhours-nudge')).toBeHidden();
   await page.reload();
-  await expect(page.getByTestId('score-Bumble Sam')).toHaveText('25');
+  await expect(page.getByTestId('pattern-headline')).toContainText('Mostly green');
+  await expect(page.getByText(/\/100/)).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
-test('feeling unsafe caps the score and shows the helpline', async ({ page }) => {
+test('boundaries are tracked in check-ins; crossed boundaries and red flags turn the pattern red', async ({ page }) => {
   await page.goto('/');
   await finishIntro(page);
-  await page.getByTestId('add-person').click();
-  await page.getByTestId('person-nickname').fill('Charmer');
-  await page.getByTestId('person-save').click();
-  for (const d of ['communication', 'consistency', 'effort', 'respect', 'feel', 'future']) await page.getByTestId(`rate-${d}-5`).click();
-  await page.getByTestId('red-I feel unsafe').click();
+  await addPerson(page, 'Bumble Sam');
   await page.getByTestId('checkin-save').click();
-  await expect(page.getByTestId('person-score')).toHaveText('25');
-  await expect(page.getByText(/0808 2000 247/).first()).toBeVisible();
+  await page.getByTestId('boundary-input').fill('No last-minute plans');
+  await page.getByTestId('boundary-add').click();
+  for (let i = 0; i < 2; i++) {
+    await page.getByTestId('person-checkin').click();
+    await page.getByTestId('before-4').click();
+    await page.getByTestId('after-1').click();
+    await page.getByTestId('red-Cancels last minute, often').click();
+    await page.getByTestId('crossed-No last-minute plans').click();
+    await page.getByTestId('checkin-save').click();
+  }
+  await expect(page.getByTestId('pattern-headline')).toHaveText('The pattern says: protect your peace.');
+  await expect(page.getByTestId('pattern')).toContainText('boundaries kept 0%');
 });
 
-test('notes, ending a situationship, and the free limit of 3', async ({ page }) => {
+test('feeling unsafe shows the helpline first', async ({ page }) => {
   await page.goto('/');
   await finishIntro(page);
-  await addPerson(page, 'A', 3);
-  await page.getByTestId('note-input').fill('Great first date at the arcade');
-  await page.getByTestId('note-save').click();
-  await expect(page.getByText('Great first date at the arcade')).toBeVisible();
-  await page.getByTestId('person-end').click();
-  await page.getByTestId('end-lesson').fill('Trust the vibe');
-  await page.getByTestId('end-save').click();
-  await page.goto('/');
-  await expect(page.getByText(/Trust the vibe/)).toBeVisible();
-  await addPerson(page, 'B', 3);
-  await page.goto('/');
-  await addPerson(page, 'C', 3);
-  await page.goto('/');
-  await addPerson(page, 'D', 3);
-  await page.goto('/');
-  await page.getByTestId('add-person').click();
-  await expect(page.getByTestId('paywall')).toBeVisible();
+  await addPerson(page, 'Charmer');
+  await page.getByTestId('red-I feel unsafe').click();
+  await page.getByTestId('checkin-save').click();
+  await expect(page.getByText(/0808 2000 247/).first()).toBeVisible();
 });
