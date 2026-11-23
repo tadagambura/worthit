@@ -43,7 +43,7 @@ export const brand: Brand = {
     { id: 'yearly', label: 'Yearly', price: '£24.99 a year', note: 'Best value: about £2.08 a month' },
     { id: 'monthly', label: 'Monthly', price: '£3.49 a month' },
   ],
-  premiumPerks: ['Unlimited people (free has 3)', 'Score trends over time', 'Premium share cards as they launch', 'No ads, ever'],
+  premiumPerks: ['Unlimited people (free has 3)', 'Patterns over months, not just weeks', 'Premium share cards as they launch', 'No ads, ever'],
   privacyUrl: 'https://kaoticchainz.com/privacy',
   termsUrl: 'https://kaoticchainz.com/terms',
   supportEmail: 'hello@kaoticchainz.com',
