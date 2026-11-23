@@ -1,0 +1,51 @@
+import type { Brand } from '@/kit/theme';
+
+export const brand: Brand = {
+  slug: 'worthit',
+  name: 'WorthIt?',
+  tagline: 'Is your situationship worth it?',
+  fonts: { display: 'Unbounded_700Bold' },
+  radius: 16,
+  light: {
+    bg: '#FFF5F8',
+    surface: '#FFFFFF',
+    surfaceAlt: '#FCE4EC',
+    text: '#26111A',
+    textMuted: '#6B4B58',
+    border: '#F3D3DF',
+    primary: '#C2185B',
+    primaryText: '#FFFFFF',
+    accent: '#FFD54F',
+    accentText: '#26111A',
+    success: '#2E7D32',
+    warning: '#9A5B00',
+    danger: '#B3261E',
+    focus: '#C2185B',
+  },
+  dark: {
+    bg: '#16090F',
+    surface: '#24111A',
+    surfaceAlt: '#331824',
+    text: '#FCEAF1',
+    textMuted: '#C8A6B4',
+    border: '#432232',
+    primary: '#FF80AB',
+    primaryText: '#2A0614',
+    accent: '#FFD54F',
+    accentText: '#26111A',
+    success: '#81C784',
+    warning: '#F3B44C',
+    danger: '#FF8A80',
+    focus: '#FF80AB',
+  },
+  plans: [
+    { id: 'yearly', label: 'Yearly', price: '£24.99 a year', note: 'Best value: about £2.08 a month' },
+    { id: 'monthly', label: 'Monthly', price: '£3.49 a month' },
+  ],
+  premiumPerks: ['Unlimited people (free has 3)', 'Score trends over time', 'Premium share cards as they launch', 'No ads, ever'],
+  privacyUrl: 'https://kaoticchainz.com/privacy',
+  termsUrl: 'https://kaoticchainz.com/terms',
+  supportEmail: 'hello@kaoticchainz.com',
+};
+
+export const FREE_PEOPLE = 3;
