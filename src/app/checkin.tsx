@@ -45,7 +45,7 @@ export default function CheckInScreen() {
     usePeople.getState().checkIn(person.id, entry);
     const p = pattern([...person.checkIns, { ...entry, day: '' }]);
     track('core_action_completed', { what: 'check_in', read: p.read });
-    if (p.read === 'green') celebrate({ scene: 'high', emoji: '💒', title: 'Mostly green!', body: 'Wedding bells. Two stickmen slow-motion run at each other… and miss.' });
+    if (p.read === 'green') celebrate({ scene: 'high', emoji: '💒', title: 'Mostly green!', body: 'Wedding bells. Kaos and a friend slow-motion run at each other… and miss.' });
     else if (p.read === 'red') celebrate({ scene: 'low', emoji: '🚨', title: 'Red-flag sirens', body: 'Kaos ducks behind the sofa. Protect your peace.' });
     if (router.canGoBack()) router.back();
     else router.replace(`/person/${person.id}`);
