@@ -15,6 +15,19 @@ import { Body, Button, Card, Chip, EmptyState, H2, Muted, Note, ProgressBar, Row
 
 export const FREE_CARDS = 20;
 
+/** Stable per-card option order, so the right answer isn't always in the same slot. */
+export function optionOrder(id: string, n: number): number[] {
+  let h = 2166136261;
+  for (const ch of id) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const order = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) {
+    h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
+    const j = h % (i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
 export type LearnCard = {
   id: string;
   topic: string;
@@ -79,7 +92,8 @@ export function CardView({ card, app, onDone }: { card: LearnCard; app: string; 
       {card.quiz ? (
         <Stack gap={8}>
           <Strong>{card.quiz.q}</Strong>
-          {card.quiz.options.map((o, i) => {
+          {optionOrder(card.id, card.quiz.options.length).map((i, pos) => {
+            const o = card.quiz!.options[i];
             const show = picked != null || !!done;
             const right = i === card.quiz!.answer;
             return (
@@ -92,7 +106,7 @@ export function CardView({ card, app, onDone }: { card: LearnCard; app: string; 
                   setPicked(i);
                   finish(i === card.quiz!.answer);
                 }}
-                testID={`card-quiz-${i}`}
+                testID={`card-quiz-${pos}`}
                 style={{ padding: 12, borderRadius: radius, borderWidth: 1.5, borderColor: show && right ? c.success : c.border, backgroundColor: show && right ? c.surfaceAlt : c.surface }}
               >
                 <Text style={{ color: c.text, fontWeight: '600' }}>{`${show && right ? '✓ ' : ''}${o}`}</Text>

@@ -55,3 +55,36 @@ export function reminderError(r: ReminderResult): string | null {
   if (r.reason === 'denied') return 'Notifications are switched off for this app. You can turn them on in your phone settings.';
   return "Couldn't set the reminder. Please try again.";
 }
+
+export type Scheduled = { id: string; at: Date; title: string; body: string };
+
+/**
+ * Keep one-off reminders in sync: cancels this app's reminders whose id starts with `prefix`, then
+ * schedules the given future ones. Idempotent, so it's safe to call on every launch or change.
+ * Returns how many were scheduled (0 on web or without permission).
+ */
+export async function syncScheduled(prefix: string, items: Scheduled[], askPermission = false): Promise<number> {
+  if (!remindersSupported) return 0;
+  try {
+    let { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted' && askPermission) status = (await Notifications.requestPermissionsAsync()).status;
+    if (status !== 'granted') return 0;
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('daily', { name: 'Reminders', importance: Notifications.AndroidImportance.DEFAULT });
+    }
+    const existing = await Notifications.getAllScheduledNotificationsAsync();
+    await Promise.all(existing.filter((n) => n.identifier.startsWith(prefix)).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)));
+    const now = Date.now();
+    const future = items.filter((i) => i.at.getTime() > now + 30_000).slice(0, 50);
+    for (const i of future) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: i.id,
+        content: { title: i.title, body: i.body },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: i.at, channelId: 'daily' },
+      });
+    }
+    return future.length;
+  } catch {
+    return 0;
+  }
+}
