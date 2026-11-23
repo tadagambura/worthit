@@ -2,6 +2,7 @@
 import { addDays, addMonths, diffDays, isDayKey, range, startOfWeek, weekday } from '../dates';
 import { formatGBP, parseGBP, splitEvenly, toInput } from '../money';
 import { computeStreak, streakMessage } from '../streak';
+import { contrast, makePalettes, THEMES } from '../themes';
 
 describe('dates', () => {
   test('adds days across month, year and BST boundaries', () => {
@@ -119,5 +120,22 @@ describe('streak engine', () => {
     const s = computeStreak({ done, start, today: '2026-11-09' });
     expect(s.status).toBe('repairing');
     expect(s.repair?.restores).toBe(1);
+  });
+});
+
+describe('themes', () => {
+  test('there are 20 themes with unique ids', () => {
+    expect(THEMES).toHaveLength(20);
+    expect(new Set(THEMES.map((t) => t.id)).size).toBe(20);
+  });
+  test.each(THEMES.map((t) => [t.id, t] as const))('%s passes WCAG AA in light and dark mode', (_id, t) => {
+    const { light, dark } = makePalettes(t);
+    for (const p of [light, dark]) {
+      expect(contrast(p.text, p.bg)).toBeGreaterThanOrEqual(7);
+      expect(contrast(p.textMuted, p.bg)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(p.textMuted, p.surface)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(p.primaryText, p.primary)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(p.accentText, p.accent)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

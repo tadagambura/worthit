@@ -5,6 +5,7 @@ export const brand: Brand = {
   name: 'WorthIt?',
   tagline: 'Is your situationship worth it?',
   fonts: { display: 'Unbounded_700Bold' },
+  defaultTheme: 'purple',
   radius: 16,
   light: {
     bg: '#FFF5F8',

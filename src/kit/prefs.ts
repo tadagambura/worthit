@@ -5,6 +5,9 @@ export type Prefs = {
   onboarded: boolean;
   reminder: { on: boolean; hour: number; minute: number; weekday?: number };
   reduceMotion: boolean;
+  /** Chosen theme id, or undefined for the app's default. */
+  theme?: string;
+  setTheme: (id: string | undefined) => void;
   setOnboarded: () => void;
   setReminder: (r: Partial<Prefs['reminder']>) => void;
   setReduceMotion: (v: boolean) => void;
@@ -20,6 +23,7 @@ function make(app: string, defaultHour: number) {
     setOnboarded: () => set({ onboarded: true }),
     setReminder: (r) => set((s) => ({ reminder: { ...s.reminder, ...r } })),
     setReduceMotion: (v) => set({ reduceMotion: v }),
+    setTheme: (theme) => set({ theme }),
   }));
 }
 

@@ -14,6 +14,8 @@ import { usePremium } from './premium';
 import { disableReminder, enableDailyReminder, reminderError, remindersSupported } from './reminders';
 import { TEST_MODE } from './Root';
 import { useTheme } from './theme';
+import { palettesFor, THEMES } from './themes';
+import { Pressable, Text, View } from 'react-native';
 import { Body, Card, Chip, Divider, H1, ListRow, Muted, Row, Screen, Section, Toggle } from './ui';
 
 const HOURS = [7, 8, 9, 12, 17, 19, 21];
@@ -29,10 +31,11 @@ const WEEKDAYS = [
 const label = (h: number) => (h === 12 ? '12pm' : h < 12 ? `${h}am` : `${h - 12}pm`);
 
 export function KitSettings({ children, reminder, onDataDeleted }: { children?: ReactNode; reminder?: { title: string; body: string; explain: string; weekly?: boolean }; onDataDeleted?: () => void }) {
-  const { brand } = useTheme();
+  const { brand, themeId, c } = useTheme();
   const { isPremium, mode, restore, cancelTest } = usePremium();
   const { toast, confirm } = useFeedback();
-  const prefs = prefsStore(brand.slug)();
+  const usePrefs = prefsStore(brand.slug);
+  const prefs = usePrefs();
   const [paywall, setPaywall] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const version = Constants.expoConfig?.version ?? '1.0.0';
@@ -62,6 +65,32 @@ export function KitSettings({ children, reminder, onDataDeleted }: { children?: 
     <Screen testID="settings">
       <H1>Settings</H1>
       {children}
+
+      <Section title="Theme">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }} accessibilityRole="radiogroup" accessibilityLabel="Theme">
+          {[{ id: 'original', name: 'Original' }, ...THEMES].map((t) => {
+            const pal = t.id === 'original' ? brand.light : palettesFor(t.id)!.light;
+            const on = themeId === t.id;
+            return (
+              <Pressable
+                key={t.id}
+                accessibilityRole="radio"
+                aria-checked={on}
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={`${t.name}${t.id === brand.defaultTheme ? ' (default)' : ''}`}
+                onPress={() => prefs.setTheme(t.id === brand.defaultTheme ? undefined : t.id)}
+                testID={`theme-${t.id}`}
+                style={{ alignItems: 'center', width: 64, gap: 4 }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: pal.primary, borderWidth: on ? 4 : 2, borderColor: on ? c.text : pal.accent }} />
+                <Text style={{ fontSize: 11, color: c.textMuted, textAlign: 'center' }} numberOfLines={1}>
+                  {t.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Section>
 
       <Section title="Premium">
         <Card>
