@@ -2,6 +2,7 @@
 //
 // The game shell every KC Arcade game runs inside: how to play → 3-2-1 → a short timed round
 // → results (score, best, what it earned, what you learned). Mechanics only report points.
+// Ads only ever pay gems; the one thing an ad can give directly is a revive (owner, 24 Nov).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useAdBreak, useRewardedAd } from '../ads';
@@ -9,8 +10,11 @@ import { track } from '../analytics';
 import { success, tap } from '../haptics';
 import { useTheme } from '../theme';
 import { Body, Button, Card, H1, H2, Muted, ProgressBar, Row, Stack, Strong } from '../ui';
+import { usePremium } from '../premium';
 import { hashString } from './engine';
+import { claimsLeft, gemsStore, GEMS, reviveOptions } from './gems';
 import { MECHANICS, UNTIMED } from './mechanics';
+import { RevivePrompt } from './revive';
 import type { ArcadeCatalog, GameMeta, Pack } from './types';
 import { walletStore } from './wallet';
 
@@ -27,10 +31,17 @@ export function GameShell({ catalog, game, pack, daily, onExit }: { catalog: Arc
   const [learned, setLearned] = useState<string[]>([]);
   const [result, setResult] = useState<{ earned: number; best: boolean } | null>(null);
   const [round, setRound] = useState(0);
-  const [doubled, setDoubled] = useState(false);
+  const [gemsClaimed, setGemsClaimed] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [reviving, setReviving] = useState<(() => void) | null>(null);
+  const [revivesUsed, setRevivesUsed] = useState(0);
   const adBreak = useAdBreak();
-  const double = useRewardedAd('arcade_double');
+  const gemAd = useRewardedAd('arcade_double');
+  const reviveAd = useRewardedAd('arcade_revive');
+  const { isPremium } = usePremium();
+  const useGems = gemsStore(catalog.app);
+  const gems = useGems((s) => s.gems);
+  const gemClaimsLeft = useGems((s) => claimsLeft(s));
   const scoreRef = useRef(0);
   const ended = useRef(false);
   const timed = !UNTIMED.has(game.mechanic);
@@ -53,7 +64,9 @@ export function GameShell({ catalog, game, pack, daily, onExit }: { catalog: Arc
     setLearned([]);
     setLeft(game.seconds);
     setResult(null);
-    setDoubled(false);
+    setGemsClaimed(0);
+    setReviving(null);
+    setRevivesUsed(0);
     setCount(3);
     setRound((n) => n + 1);
     setPhase('countdown');
@@ -70,14 +83,14 @@ export function GameShell({ catalog, game, pack, daily, onExit }: { catalog: Arc
   }, [phase, count]);
 
   useEffect(() => {
-    if (phase !== 'play' || !timed) return;
+    if (phase !== 'play' || !timed || reviving) return;
     if (left <= 0) {
       end();
       return;
     }
     const t = setTimeout(() => setLeft((n) => n - 1), 1000);
     return () => clearTimeout(t);
-  }, [phase, left, timed, end]);
+  }, [phase, left, timed, end, reviving]);
 
   const addScore = useCallback((n: number) => {
     scoreRef.current = Math.max(0, scoreRef.current + n);
@@ -85,6 +98,24 @@ export function GameShell({ catalog, game, pack, daily, onExit }: { catalog: Arc
     if (n > 0) tap();
   }, []);
   const learn = useCallback((s: string) => setLearned((l) => (l.includes(s) || l.length > 6 ? l : [...l, s])), []);
+  const reviveOpts = reviveOptions({ gems, premium: isPremium, adReady: reviveAd.ready, revivesUsed });
+  // A game that ends on a mistake asks here first. No revive available: the round just ends.
+  const fail = useCallback(
+    (resume: () => void) => {
+      const o = reviveOptions({ gems: useGems.getState().gems, premium: isPremium, adReady: reviveAd.ready, revivesUsed });
+      if (!o.free && !o.gems && !o.ad) return end();
+      setReviving(() => resume);
+    },
+    [useGems, isPremium, reviveAd.ready, revivesUsed, end],
+  );
+  const revive = (how: 'free' | 'gems' | 'ad') => {
+    const resume = reviving;
+    if (!resume) return;
+    setRevivesUsed((n) => n + 1);
+    setReviving(null);
+    track('core_action_completed', { action: 'revive', via: how, game: game.id });
+    resume();
+  };
 
   if (phase === 'ready') {
     return (
@@ -132,26 +163,23 @@ export function GameShell({ catalog, game, pack, daily, onExit }: { catalog: Arc
             ))}
           </Card>
         ) : null}
-        {result.earned > 0 && !doubled && double.ready ? (
+        {gemClaimsLeft > 0 && gemsClaimed === 0 && (isPremium || gemAd.ready) ? (
           <Button
-            title={`Double it: +${result.earned} ${catalog.currency.emoji} for a short ad`}
-            icon="play-circle-outline"
+            title={isPremium ? `Claim +${GEMS.perReward} 💎 (subscriber bonus)` : `Watch a short ad: +${GEMS.perReward} 💎`}
+            icon={isPremium ? 'diamond-outline' : 'play-circle-outline'}
             variant="secondary"
             loading={busy}
-            testID="game-double"
-            accessibilityHint="Optional. Plays a short video ad, then doubles what this round earned."
+            testID="game-gems"
+            accessibilityHint={isPremium ? 'Adds gems. No ad.' : 'Optional. Plays a short video ad, then adds gems.'}
             onPress={async () => {
               setBusy(true);
-              const r = await double.show();
-              if (r.earned) {
-                useWallet.getState().bonus(result.earned);
-                setDoubled(true);
-              }
+              const ok = isPremium || (await gemAd.show()).earned;
+              if (ok) setGemsClaimed(useGems.getState().claim());
               setBusy(false);
             }}
           />
         ) : null}
-        {doubled ? <Strong center testID="game-doubled">{`Doubled! +${result.earned} more ${catalog.currency.emoji}`}</Strong> : null}
+        {gemsClaimed ? <Strong center testID="game-gems-claimed">{`+${gemsClaimed} 💎 added. You have ${gems} 💎.`}</Strong> : null}
         <Button
           title="Play again"
           icon="refresh"
@@ -188,8 +216,31 @@ export function GameShell({ catalog, game, pack, daily, onExit }: { catalog: Arc
         {timed ? <Strong testID="game-timer">{`${left}s`}</Strong> : null}
       </Row>
       {timed ? <ProgressBar value={left / game.seconds} label={`${left} seconds left`} height={8} /> : null}
-      <Mech key={round} pack={pack as never} seed={hashString(`${game.id}:${round}:${Date.now() >> 16}`)} addScore={addScore} learn={learn} end={end} />
-      <Button title="End round" variant="ghost" small onPress={end} testID="game-end" />
+      {reviving ? (
+        <RevivePrompt
+          options={reviveOpts}
+          gems={gems}
+          busy={busy}
+          onFree={() => revive('free')}
+          onGems={() => {
+            if (useGems.getState().spend(GEMS.reviveCost)) revive('gems');
+          }}
+          onAd={async () => {
+            setBusy(true);
+            const r = await reviveAd.show();
+            setBusy(false);
+            if (r.earned) revive('ad');
+          }}
+          onEnd={() => {
+            setReviving(null);
+            end();
+          }}
+        />
+      ) : null}
+      <View pointerEvents={reviving ? 'none' : 'auto'} style={{ opacity: reviving ? 0.35 : 1 }}>
+        <Mech key={round} pack={pack as never} seed={hashString(`${game.id}:${round}:${Date.now() >> 16}`)} addScore={addScore} learn={learn} end={end} fail={fail} />
+      </View>
+      {reviving ? null : <Button title="End round" variant="ghost" small onPress={end} testID="game-end" />}
     </Stack>
   );
 }

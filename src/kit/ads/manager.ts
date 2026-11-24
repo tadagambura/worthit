@@ -534,8 +534,8 @@ export class AdsManager {
     }
   }
 
-  /** For the test-build debug panel. */
-  debug() {
+  /** For the test-build debug panel. Pass the store version so render-time callers recompute. */
+  debug(_version?: number) {
     const c = this.state.counters;
     return {
       started: this.started,

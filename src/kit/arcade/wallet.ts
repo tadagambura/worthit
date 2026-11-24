@@ -2,7 +2,8 @@
 //
 // The arcade wallet: each app's currency (coins, gems, ice cubes…), best scores and the
 // daily challenge. Spending happens in the app (vault decorations, streak shields…) through
-// spend(). Nothing here ever decreases because someone didn't play.
+// spend(). Nothing here ever decreases because someone didn't play. Ads never pay this
+// currency: they pay gems (gems.ts), which people can swap in.
 import { todayKey } from '../dates';
 import { persisted } from '../store';
 import { rewardFor } from './engine';
@@ -19,17 +20,7 @@ type WalletState = {
   finish: (gameId: string, score: number, daily: boolean) => { earned: number; best: boolean };
   /** Spend currency in the app. Returns false (and changes nothing) if there isn't enough. */
   spend: (amount: number) => boolean;
-  /** Extra currency from an opt-in rewarded ad (double a round, daily bonus). Outside the daily game cap. */
-  bonus: (amount: number) => void;
-  /** Day the rewarded daily bonus was last claimed. */
-  bonusDay: string | null;
-  claimDailyBonus: (amount: number) => boolean;
 };
-
-/** Most a single rewarded bonus can add. */
-export const BONUS_MAX = 60;
-/** What the once-a-day rewarded bonus pays. */
-export const DAILY_BONUS = 15;
 
 const stores = new Map<string, ReturnType<typeof make>>();
 
@@ -64,20 +55,6 @@ function make(app: string) {
       const s = get();
       if (amount <= 0 || s.balance < amount) return false;
       set({ balance: s.balance - amount });
-      return true;
-    },
-    bonus: (amount) => {
-      const n = Math.max(0, Math.min(Math.round(amount), BONUS_MAX));
-      if (!n) return;
-      const s = get();
-      set({ balance: s.balance + n, lifetime: s.lifetime + n });
-    },
-    bonusDay: null,
-    claimDailyBonus: (amount) => {
-      const today = todayKey();
-      if (get().bonusDay === today) return false;
-      get().bonus(amount);
-      set({ bonusDay: today });
       return true;
     },
   }));
