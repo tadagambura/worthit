@@ -60,7 +60,9 @@ const Installed = createContext<ReadonlySet<string>>(new Set());
 export function AdsProvider({ app, children }: { app: string; children: ReactNode }) {
   const m = adsFor(app);
   const { isPremium, ready } = usePremium();
-  const onboarded = prefsStore(app)((s) => s.onboarded);
+  // Named like a hook so the React Compiler treats it as one (an inline call got cached and crashed with #311).
+  const usePrefs = prefsStore(app);
+  const onboarded = usePrefs((s) => s.onboarded);
   const [installed, setInstalled] = useState<ReadonlySet<string>>(new Set());
   useSyncExternalStore(m.subscribe, m.getVersion, m.getVersion);
 
