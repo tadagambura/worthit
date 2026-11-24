@@ -32,7 +32,9 @@ A non-conventional dating app that helps you build better relationships instead 
 | Model | Detail |
 |---|---|
 | Free | Notes and ranking for up to 3 people, with ads |
-| Premium | £24.99/year (shown first) or £3.49/month: unlimited people, AI coach, deeper breakdowns, trends over time, premium cards |
+| Premium | £34.99/year (shown first) or £3.49/month: unlimited people, AI coach, deeper breakdowns, trends over time, premium cards, every Arcade game in the app |
+| Arcade games | £0.99 each, kept forever, or every game in the app with Premium |
+| KC All Access | £25 once (every Arcade game in every KC app, kept forever) plus £7.99/month or £79.99/year (Premium in every KC app). Needs a free KC account. |
 | Phase 2 | Profile extras: score insights, verification badge |
 | Ads | Never on the result or coach screens |
 
