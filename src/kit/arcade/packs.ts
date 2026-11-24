@@ -46,3 +46,55 @@ export async function loadPack(app: string, g: GameMeta, bundled: Record<string,
 export function removePack(app: string, g: GameMeta) {
   if (g.pack) kv.remove(cacheKey(app, g));
 }
+
+// ---------- "Download all games" (like a game's HD resources screen, all inside the app) ----------
+
+export type DownloadSummary = { total: number; onPhone: number; toDownload: number; bytesToDownload: number; bytesOnPhone: number };
+
+/** What's already on the phone (bundled or downloaded) and what a "Download all" would fetch. */
+export function downloadSummary(app: string, games: GameMeta[], bundled: Record<string, Pack>): DownloadSummary {
+  const withPacks = games.filter((g) => g.pack);
+  let onPhone = 0;
+  let bytesOnPhone = 0;
+  let bytesToDownload = 0;
+  for (const g of withPacks) {
+    if (packState(app, g, bundled) === 'remote') bytesToDownload += g.pack!.bytes;
+    else {
+      onPhone++;
+      bytesOnPhone += g.pack!.bytes;
+    }
+  }
+  return { total: withPacks.length, onPhone, toDownload: withPacks.length - onPhone, bytesToDownload, bytesOnPhone };
+}
+
+/**
+ * Download every game that isn't on the phone yet, one at a time, inside the app. Failures
+ * don't stop the rest; they're counted so the person can retry. Already-cached packs are skipped.
+ */
+export async function downloadAll(
+  app: string,
+  games: GameMeta[],
+  bundled: Record<string, Pack>,
+  onProgress: (done: number, total: number) => void = () => {},
+  fetcher?: Fetcher,
+): Promise<{ downloaded: number; failed: number }> {
+  const todo = games.filter((g) => g.pack && packState(app, g, bundled) === 'remote');
+  let downloaded = 0;
+  let failed = 0;
+  onProgress(0, todo.length);
+  for (const g of todo) {
+    try {
+      await loadPack(app, g, bundled, fetcher);
+      downloaded++;
+    } catch {
+      failed++;
+    }
+    onProgress(downloaded + failed, todo.length);
+  }
+  return { downloaded, failed };
+}
+
+/** Free up space: remove every downloaded game. Bundled games and progress (scores, currency) stay. */
+export function removeAllDownloads(app: string, games: GameMeta[]) {
+  for (const g of games) removePack(app, g);
+}

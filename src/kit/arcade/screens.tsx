@@ -6,6 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useRewardedAd } from '../ads';
 import { todayKey } from '../dates';
 import { lineForTier, type Tier } from '../entitlements';
 import { PaywallSheet } from '../Paywall';
@@ -16,7 +17,7 @@ import { dailyGame } from './engine';
 import { loadPack, packState } from './packs';
 import { GameShell } from './Shell';
 import type { ArcadeCatalog, GameMeta, Pack } from './types';
-import { walletStore } from './wallet';
+import { DAILY_BONUS, walletStore } from './wallet';
 
 type Registered = { catalog: ArcadeCatalog; bundled: Record<string, Pack> };
 let registered: Registered | null = null;
@@ -48,6 +49,8 @@ export function ArcadeHome() {
   const useWallet = walletStore(reg?.catalog.app ?? 'none');
   const wallet = useWallet();
   const [paywall, setPaywall] = useState<Tier | null>(null);
+  const bonus = useRewardedAd('arcade_daily');
+  const [claiming, setClaiming] = useState(false);
   if (!reg) return <Screen><Body>The arcade isn't set up in this app yet.</Body></Screen>;
   const { catalog, bundled } = reg;
   const daily = dailyGame(catalog, todayKey(), (g) => can(g.tier));
@@ -74,6 +77,28 @@ export function ArcadeHome() {
         <Card tone="primary" onPress={() => open(daily, true)} testID="arcade-daily" accessibilityLabel={`Daily challenge: ${daily.name}`}>
           <Text style={{ color: c.primaryText, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase', fontSize: 12 }}>{dailyDone ? 'Daily challenge: done today' : 'Daily challenge: double rewards'}</Text>
           <Text style={{ color: c.primaryText, fontSize: 22, fontWeight: '800' }}>{`${daily.emoji} ${daily.name}`}</Text>
+        </Card>
+      ) : null}
+
+      {bonus.ready && wallet.bonusDay !== todayKey() ? (
+        <Card
+          testID="arcade-bonus"
+          accessibilityLabel={`Daily bonus: ${DAILY_BONUS} ${catalog.currency.name.toLowerCase()} for watching a short ad. Optional.`}
+          onPress={async () => {
+            if (claiming) return;
+            setClaiming(true);
+            const r = await bonus.show();
+            if (r.earned) useWallet.getState().claimDailyBonus(DAILY_BONUS);
+            setClaiming(false);
+          }}
+        >
+          <Row gap={12}>
+            <Text style={{ fontSize: 28 }}>🎁</Text>
+            <View style={{ flex: 1 }}>
+              <Strong>{`Daily bonus: +${DAILY_BONUS} ${catalog.currency.emoji}`}</Strong>
+              <Muted>Watch a short ad to claim it. Optional, once a day.</Muted>
+            </View>
+          </Row>
         </Card>
       ) : null}
 

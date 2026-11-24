@@ -4,6 +4,7 @@
 // → results (score, best, what it earned, what you learned). Mechanics only report points.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
+import { useAdBreak, useRewardedAd } from '../ads';
 import { track } from '../analytics';
 import { success, tap } from '../haptics';
 import { useTheme } from '../theme';
@@ -26,6 +27,10 @@ export function GameShell({ catalog, game, pack, daily, onExit }: { catalog: Arc
   const [learned, setLearned] = useState<string[]>([]);
   const [result, setResult] = useState<{ earned: number; best: boolean } | null>(null);
   const [round, setRound] = useState(0);
+  const [doubled, setDoubled] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const adBreak = useAdBreak();
+  const double = useRewardedAd('arcade_double');
   const scoreRef = useRef(0);
   const ended = useRef(false);
   const timed = !UNTIMED.has(game.mechanic);
@@ -48,6 +53,7 @@ export function GameShell({ catalog, game, pack, daily, onExit }: { catalog: Arc
     setLearned([]);
     setLeft(game.seconds);
     setResult(null);
+    setDoubled(false);
     setCount(3);
     setRound((n) => n + 1);
     setPhase('countdown');
@@ -126,8 +132,51 @@ export function GameShell({ catalog, game, pack, daily, onExit }: { catalog: Arc
             ))}
           </Card>
         ) : null}
-        <Button title="Play again" icon="refresh" onPress={start} testID="game-again" />
-        <Button title="Back to the arcade" variant="secondary" onPress={onExit} testID="game-exit" />
+        {result.earned > 0 && !doubled && double.ready ? (
+          <Button
+            title={`Double it: +${result.earned} ${catalog.currency.emoji} for a short ad`}
+            icon="play-circle-outline"
+            variant="secondary"
+            loading={busy}
+            testID="game-double"
+            accessibilityHint="Optional. Plays a short video ad, then doubles what this round earned."
+            onPress={async () => {
+              setBusy(true);
+              const r = await double.show();
+              if (r.earned) {
+                useWallet.getState().bonus(result.earned);
+                setDoubled(true);
+              }
+              setBusy(false);
+            }}
+          />
+        ) : null}
+        {doubled ? <Strong center testID="game-doubled">{`Doubled! +${result.earned} more ${catalog.currency.emoji}`}</Strong> : null}
+        <Button
+          title="Play again"
+          icon="refresh"
+          disabled={busy}
+          testID="game-again"
+          onPress={async () => {
+            setBusy(true);
+            // A finished round is the natural break for an interstitial (every 2nd, frequency-capped).
+            await adBreak('arcade_break');
+            setBusy(false);
+            start();
+          }}
+        />
+        <Button
+          title="Back to the arcade"
+          variant="secondary"
+          disabled={busy}
+          testID="game-exit"
+          onPress={async () => {
+            setBusy(true);
+            await adBreak('arcade_break');
+            setBusy(false);
+            onExit();
+          }}
+        />
       </Stack>
     );
   }

@@ -30,7 +30,19 @@ export type EventName =
   | 'age_check_completed'
   | 'data_exported'
   | 'data_deleted'
-  | 'error_shown';
+  | 'error_shown'
+  // Ads (kit/ads). Revenue is in micros of `currency` (AdMob impression-level revenue).
+  | 'ad_consent'
+  | 'ad_loaded'
+  | 'ad_failed'
+  | 'ad_impression'
+  | 'ad_click'
+  | 'ad_revenue'
+  | 'ad_reward'
+  | 'ad_skipped'
+  | 'ad_inline_summary'
+  | 'house_ad_impression'
+  | 'house_ad_click';
 
 type Value = string | number | boolean | null;
 export type Props = Record<string, Value>;
@@ -40,6 +52,12 @@ type Sink = (event: string, props: Props) => void;
 const log: { event: string; props: Props; at: string }[] = [];
 let app = 'unknown';
 let sink: Sink | null = null;
+/** Properties added to every event, such as the ads experiment variant (for retention by variant). */
+let context: Props = {};
+
+export function setAnalyticsContext(props: Props) {
+  context = { ...context, ...props };
+}
 
 export function initAnalytics(appId: string, liveSink?: Sink) {
   app = appId;
@@ -53,7 +71,7 @@ export function initAnalytics(appId: string, liveSink?: Sink) {
 }
 
 export function track(event: EventName, props: Props = {}) {
-  const clean: Props = { app_id: app };
+  const clean: Props = { ...context, app_id: app };
   for (const [k, v] of Object.entries(props)) {
     if (typeof v === 'string' && v.length > 40) continue;
     clean[k] = v;

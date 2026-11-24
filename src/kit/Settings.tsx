@@ -6,6 +6,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
+import { useAdSettings } from './ads';
 import { arcade } from './arcade/screens';
 import { debugEvents, analyticsMode } from './analytics';
 import { deleteAllData, exportData } from './data';
@@ -41,6 +42,7 @@ export function KitSettings({ children, reminder, onDataDeleted }: { children?: 
   const prefs = usePrefs();
   const [paywall, setPaywall] = useState<false | 'app_premium' | 'all_access' | 'arcade'>(false);
   const [showDebug, setShowDebug] = useState(false);
+  const ads = useAdSettings();
   const version = Constants.expoConfig?.version ?? '1.0.0';
   const reminderId = `${brand.slug}-daily`;
 
@@ -139,6 +141,50 @@ export function KitSettings({ children, reminder, onDataDeleted }: { children?: 
         </Card>
       </Section>
 
+      {ads && (ads.showAdsRow || ads.privacyRequired) ? (
+        <Section title="Ads">
+          <Card>
+            {ads.showAdsRow ? (
+              <ListRow icon="eye-off-outline" title="Go ad-free" subtitle="Premium removes every ad" onPress={() => setPaywall('app_premium')} testID="settings-adfree" />
+            ) : null}
+            {ads.privacyRequired ? (
+              <>
+                {ads.showAdsRow ? <Divider /> : null}
+                <ListRow
+                  icon="shield-half-outline"
+                  title="Privacy and ad choices"
+                  subtitle="Change what you agreed to for ads, any time"
+                  testID="settings-adchoices"
+                  onPress={async () => {
+                    try {
+                      await ads.showPrivacyOptions();
+                    } catch {
+                      toast("Couldn't open your ad choices. Please try again in a moment.");
+                    }
+                  }}
+                />
+              </>
+            ) : null}
+            {ads.showAdsRow ? (
+              <>
+                <Divider />
+                <ListRow
+                  icon="flag-outline"
+                  title="Report an ad"
+                  subtitle="An ad that's offensive, misleading or broken"
+                  testID="settings-reportad"
+                  onPress={() =>
+                    Linking.openURL(
+                      `mailto:${brand.supportEmail}?subject=${encodeURIComponent(`Report an ad in ${brand.name}`)}&body=${encodeURIComponent('What was the ad for, and where did you see it? A screenshot helps.\n\n')}`,
+                    )
+                  }
+                />
+              </>
+            ) : null}
+          </Card>
+        </Section>
+      ) : null}
+
       {reminder ? (
         <Section title="Reminder">
           <Card>
@@ -216,6 +262,19 @@ export function KitSettings({ children, reminder, onDataDeleted }: { children?: 
           <Card>
             <ListRow icon="analytics-outline" title={`Analytics: ${analyticsMode()} mode`} subtitle="Show the last events" onPress={() => setShowDebug((v) => !v)} />
             {showDebug ? debugEvents().slice(0, 15).map((e, i) => <Muted key={i}>{`${e.event} ${JSON.stringify(e.props)}`}</Muted>) : null}
+            {ads?.debug ? (
+              <>
+                <Divider />
+                <Muted>{`Ads (Google test ads only): ${ads.debug.started ? 'on' : 'off'} · consent ${ads.debug.consent.canRequestAds ? 'ok' : 'none'} · session ${ads.debug.sessions} · full-screen today ${ads.debug.fullscreenToday} · rewarded today ${ads.debug.rewardedToday}${ads.debug.variants.length ? ` · ${ads.debug.variants.join(', ')}` : ''}`}</Muted>
+                {ads.debug.slots.map((l) => (
+                  <Muted key={l}>{l}</Muted>
+                ))}
+                {ads.debug.recent.slice(0, 5).map((r, i) => (
+                  <Muted key={i}>{`${r.placement}: ${r.result}`}</Muted>
+                ))}
+                {ads.inspector ? <ListRow icon="bug-outline" title="Ad Inspector" subtitle="Google's tool: every ad source and why it filled" onPress={() => void ads.inspector?.()} /> : null}
+              </>
+            ) : null}
             {test ? (
               <>
                 <Divider />
