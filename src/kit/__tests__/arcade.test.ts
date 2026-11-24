@@ -129,3 +129,29 @@ describe("this app's arcade catalog", () => {
     expect(catalogProblems(real!)).toEqual([]);
   });
 });
+
+describe('download all games', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { downloadAll, downloadSummary, removeAllDownloads } = require('../arcade/packs') as typeof import('../arcade/packs');
+  const mk = (id: string, text: string): [GameMeta, string] => [game({ id, pack: { file: `dl/${id}.json`, sha256: sha256(text), bytes: text.length } }), text];
+  const files = [mk('a', '{"items":[1]}'), mk('b', '{"items":[2]}'), mk('c', '{"items":[3]}')];
+  const games = [...files.map(([g]) => g), game({ id: 'r', mechanic: 'route', route: '/x', pack: null })];
+  const body = Object.fromEntries(files.map(([g, t]) => [`https://kaoticchainz.com/arcade/${g.pack!.file}`, t]));
+  test('summarises, downloads only what is missing, reports progress, and removes', async () => {
+    const bundled = { a: { items: [1] } } as never;
+    expect(downloadSummary('dl', games, bundled)).toMatchObject({ total: 3, onPhone: 1, toDownload: 2 });
+    const seen: number[] = [];
+    let fail = true;
+    const fetcher = async (url: string) => {
+      if (url.endsWith('/c.json') && fail) throw new Error('offline');
+      return { ok: true, text: async () => body[url] };
+    };
+    expect(await downloadAll('dl', games, bundled, (d) => seen.push(d), fetcher)).toEqual({ downloaded: 1, failed: 1 });
+    expect(seen).toEqual([0, 1, 2]);
+    fail = false;
+    expect(await downloadAll('dl', games, bundled, () => {}, fetcher)).toEqual({ downloaded: 1, failed: 0 });
+    expect(downloadSummary('dl', games, bundled)).toMatchObject({ onPhone: 3, toDownload: 0, bytesToDownload: 0 });
+    removeAllDownloads('dl', games);
+    expect(downloadSummary('dl', games, bundled)).toMatchObject({ onPhone: 1, toDownload: 2 });
+  });
+});

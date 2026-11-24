@@ -3,8 +3,9 @@
 // Learning cards: the "links that make life easier" layer in every app. 20 cards are free, Premium
 // unlocks the rest. Every card shows its source. Optional quick quiz. Progress is stored locally.
 import * as WebBrowser from 'expo-web-browser';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { NativeAdCard } from './ads';
 import { track } from './analytics';
 import { formatDay, todayKey, type DayKey } from './dates';
 import { PaywallSheet } from './Paywall';
@@ -14,6 +15,8 @@ import { useTheme } from './theme';
 import { Body, Button, Card, Chip, EmptyState, H2, Muted, Note, ProgressBar, Row, Section, Sheet, Stack, Strong, Toggle } from './ui';
 
 export const FREE_CARDS = 20;
+/** One native ad (apps with a learn_native placement), after this many cards: below the fold, never first. */
+const NATIVE_AD_AFTER = 3;
 
 /** Stable per-card option order, so the right answer isn't always in the same slot. */
 export function optionOrder(id: string, n: number): number[] {
@@ -157,17 +160,20 @@ export function CardLibrary({ pack, app, relevant, relevantLabel }: { pack: Card
       </Row>
       {list.length === 0 ? <EmptyState icon="book-outline" title="No cards here yet" /> : null}
       <Section title="Cards">
-        {list.map((x) => {
+        {list.map((x, i) => {
           const locked = !free.has(x.id);
           const read = !!st.read[x.id];
           return (
-            <Card key={x.id} onPress={() => (locked ? setPaywall(true) : setOpen(x))} testID={`card-${x.id}`} accessibilityLabel={`${x.title}${locked ? ', Premium' : read ? ', read' : ''}`}>
+            <Fragment key={x.id}>
+            {i === NATIVE_AD_AFTER ? <NativeAdCard placement="learn_native" /> : null}
+            <Card onPress={() => (locked ? setPaywall(true) : setOpen(x))} testID={`card-${x.id}`} accessibilityLabel={`${x.title}${locked ? ', Premium' : read ? ', read' : ''}`}>
               <Row style={{ justifyContent: 'space-between' }}>
                 <Strong style={{ flex: 1 }}>{`${read ? '✓ ' : ''}${x.title}`}</Strong>
                 <Text style={{ color: c.textMuted }}>{locked ? '🔒' : st.saved.includes(x.id) ? '★' : ''}</Text>
               </Row>
               <Muted>{x.topic}</Muted>
             </Card>
+            </Fragment>
           );
         })}
       </Section>

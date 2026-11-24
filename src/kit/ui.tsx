@@ -32,12 +32,15 @@ export function Screen({
   children,
   scroll = true,
   footer,
+  banner,
   edges = ['top'],
   testID,
 }: {
   children: ReactNode;
   scroll?: boolean;
   footer?: ReactNode;
+  /** A sticky ad slot under the content (kit/ads <AdBanner>). Never on screens with a footer of actions. */
+  banner?: ReactNode;
   edges?: ('top' | 'bottom')[];
   testID?: string;
 }) {
@@ -53,6 +56,7 @@ export function Screen({
         <View style={[styles.fill, styles.scroll]}>{inner}</View>
       )}
       {footer ? <View style={[styles.footer, { borderTopColor: c.border, backgroundColor: c.bg }]}>{footer}</View> : null}
+      {banner}
     </SafeAreaView>
   );
 }

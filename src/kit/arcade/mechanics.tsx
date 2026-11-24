@@ -9,7 +9,18 @@ import { Body, Button, Card, Muted, Row, Stack, Strong } from '../ui';
 import { answerPoints, guessPoints, overlap, rng, shuffled } from './engine';
 import type { CatchPack, GuessPack, Mechanic, MemoryPack, OrderPack, QuizPack, SequencePack, SortPack, SpinnerPack, StackPack, WordPack } from './types';
 
-export type MechanicProps<P> = { pack: P; seed: number; addScore: (n: number) => void; learn: (s: string) => void; end: () => void };
+export type MechanicProps<P> = {
+  pack: P;
+  seed: number;
+  addScore: (n: number) => void;
+  learn: (s: string) => void;
+  end: () => void;
+  /**
+   * For games that end on a mistake (stack, sequence): offer a revive. The shell calls
+   * `resume` if the person revives, or ends the round. Without a shell handler it just ends.
+   */
+  fail?: (resume: () => void) => void;
+};
 
 /** Mechanics without a countdown timer: they end when the player finishes. */
 export const UNTIMED = new Set<Mechanic>(['spinner', 'sequence', 'memory', 'word']);
@@ -194,7 +205,7 @@ function Catch({ pack, seed, addScore, learn }: MechanicProps<CatchPack>) {
 
 // ---------- stack: drop each block on the tower ----------
 
-function StackGame({ pack, addScore, learn, end }: MechanicProps<StackPack>) {
+function StackGame({ pack, addScore, learn, end, fail }: MechanicProps<StackPack>) {
   const { c, radius } = useTheme();
   const W = 280;
   const [tower, setTower] = useState<{ left: number; width: number }[]>([{ left: 70, width: 140 }]);
@@ -219,7 +230,9 @@ function StackGame({ pack, addScore, learn, end }: MechanicProps<StackPack>) {
     const o = overlap(top.left, top.width, posRef.current, top.width);
     if (o.width < 6) {
       learn(pack.tip);
-      end();
+      // Revived: the tower stays as it was and the next block comes round again.
+      if (fail) fail(() => {});
+      else end();
       return;
     }
     addScore(o.width > top.width - 4 ? 15 : 10);
@@ -302,7 +315,7 @@ function Memory({ pack, seed, addScore, end }: MechanicProps<MemoryPack>) {
 
 // ---------- sequence: watch, then repeat ----------
 
-function Sequence({ pack, seed, addScore, learn, end }: MechanicProps<SequencePack>) {
+function Sequence({ pack, seed, addScore, learn, end, fail }: MechanicProps<SequencePack>) {
   const { c, radius } = useTheme();
   const r = useRef(rng(seed));
   const [seq, setSeq] = useState<number[]>(() => [Math.floor(r.current() * pack.symbols.length)]);
@@ -329,7 +342,9 @@ function Sequence({ pack, seed, addScore, learn, end }: MechanicProps<SequencePa
     if (showing) return;
     if (n !== seq[pos]) {
       learn(pack.tip);
-      end();
+      // Revived: the same sequence plays again from the start.
+      if (fail) fail(() => setSeq([...seq]));
+      else end();
       return;
     }
     if (pos + 1 === seq.length) {

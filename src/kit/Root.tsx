@@ -2,6 +2,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, type ReactNode } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AdsProvider } from './ads';
 import { initAnalytics } from './analytics';
 import { Billing, testClient, type TestControls } from './billing';
 import { revenueCatClient, revenueCatKey } from './billing.revenuecat';
@@ -10,8 +11,9 @@ import { FeedbackProvider } from './feedback';
 import { PremiumProvider } from './premium';
 import { ThemeProvider, useTheme, type Brand } from './theme';
 
-/** True in development, and in internal pilot builds made with EXPO_PUBLIC_TEST_MODE=1. */
-export const TEST_MODE = __DEV__ || process.env.EXPO_PUBLIC_TEST_MODE === '1';
+import { TEST_MODE } from './env';
+
+export { TEST_MODE };
 
 function Bar() {
   const { dark } = useTheme();
@@ -41,10 +43,12 @@ export function KitRoot({ brand, children }: { brand: Brand; children: ReactNode
       <PremiumProvider app={brand.slug} appName={brand.name} billing={billing} test={test}>
         <ThemeProvider brand={brand}>
           <FeedbackProvider>
-            <CelebrateProvider app={brand.slug}>
-              <Bar />
-              {children}
-            </CelebrateProvider>
+            <AdsProvider app={brand.slug}>
+              <CelebrateProvider app={brand.slug}>
+                <Bar />
+                {children}
+              </CelebrateProvider>
+            </AdsProvider>
           </FeedbackProvider>
         </ThemeProvider>
       </PremiumProvider>
