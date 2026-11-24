@@ -149,6 +149,8 @@ export type BlockReason =
   | 'rewarded_cooldown'
   | 'session_cap'
   | 'daily_cap'
+  /** The timing model chose to wait for a better moment (only ever after the policy allowed it). */
+  | 'smart_hold'
   | 'placement_cap'
   | 'not_nth_break'
   | 'entry_point'

@@ -1,10 +1,17 @@
 // Kaotic Chainz app kit: generated copy. Edit in app-portfolio/kit, then run scripts/sync-kit.sh.
 import { APP_ADS, DEFAULT_POLICY, mergePlacements, mergePolicy, parseRemote, pickHouseApp, resolveAds, variantFor } from '../ads/config';
 import { AdsManager } from '../ads/manager';
+import { kv } from '../storage';
 import { decideAppOpen, decideBreak, decideInline, decideRewarded, freshCounters, recordFullscreen, recordRewarded, rollDay, startSession } from '../ads/policy';
 import type { AdSdk, SdkEvent } from '../ads/sdk.types';
 import { GOOGLE_TEST_UNITS, parseUnits, unitFor } from '../ads/units';
 import type { AdCounters, ResolvedAds, SessionState } from '../ads/types';
+
+// Storage that persists across AdsManager instances, like a phone does between launches.
+jest.mock('../storage', () => {
+  const m = new Map<string, string>();
+  return { kv: { get: (k: string) => m.get(k) ?? null, set: (k: string, v: string) => m.set(k, v), remove: (k: string) => m.delete(k), keys: () => [...m.keys()] } };
+});
 
 const H = 3600e3;
 const D = 24 * H;
@@ -38,8 +45,9 @@ describe('ads config', () => {
   });
 
   test('owner rules: protected apps keep their limits', () => {
-    // StackUp: banner only on its own screens (lessons never), Granny's Vault: nothing in the vault.
-    expect(Object.keys(APP_ADS.stackup.placements).filter((k) => !k.startsWith('arcade_'))).toEqual(['stacks_banner']);
+    // StackUp: banner only on its own screens (lessons never) plus the app-open ad the owner asked for
+    // on 24 Nov 2026. Granny's Vault: nothing in the vault, and no app-open over its unlock screen.
+    expect(Object.keys(APP_ADS.stackup.placements).filter((k) => !k.startsWith('arcade_'))).toEqual(['stacks_banner', 'app_open']);
     expect(Object.keys(APP_ADS.grannysvault.placements).some((k) => k.includes('vault') || k.includes('emergency'))).toBe(false);
     expect(Object.keys(APP_ADS.reset.placements)).toEqual(['chores_banner']);
     expect(APP_ADS.reset.npaOnly).toBe(true);
@@ -81,17 +89,17 @@ describe('ads config', () => {
   });
 
   test('experiments assign stable variants roughly by weight', () => {
-    const exp = { id: 'aoa_v1', apps: ['afterhours'], variants: [{ id: 'control', weight: 50 }, { id: 'on', weight: 50, placements: { app_open: { enabled: true } } }] };
+    const exp = { id: 'aoa_v1', apps: ['afterhours'], variants: [{ id: 'control', weight: 50 }, { id: 'holdout', weight: 50, placements: { app_open: { enabled: false } } }] };
     expect(variantFor('abc', exp)?.id).toBe(variantFor('abc', exp)?.id);
     let on = 0;
-    for (let i = 0; i < 2000; i++) if (variantFor(`install-${i}`, exp)?.id === 'on') on++;
+    for (let i = 0; i < 2000; i++) if (variantFor(`install-${i}`, exp)?.id === 'holdout') on++;
     expect(on).toBeGreaterThan(850);
     expect(on).toBeLessThan(1150);
     const ids = Array.from({ length: 50 }, (_, i) => `i${i}`);
     const resolved = ids.map((id) => resolveAds('afterhours', { version: 1, experiments: [exp] }, id));
     for (const r of resolved) {
       expect(r.variants).toHaveLength(1);
-      expect(r.placements.app_open.enabled).toBe(r.variants[0] === 'aoa_v1:on');
+      expect(r.placements.app_open.enabled).toBe(r.variants[0] !== 'aoa_v1:holdout');
     }
     // Not in the experiment's apps: no variant.
     expect(resolveAds('loopday', { version: 1, experiments: [exp] }, 'abc').variants).toEqual([]);
@@ -127,9 +135,10 @@ describe('ads policy', () => {
   test('new users are protected from full-screen ads', () => {
     const c = { ...freshCounters(T0), sessions: 1 };
     const s = { startedAt: T0, fullscreen: 0, lapsed: false };
+    // Never in someone's very first session.
     expect(decideBreak(cfg, 'deck_break', c, s, ctx(T0 + 600e3), 1)).toEqual({ ok: false, reason: 'new_user' });
-    // Third session but only 2 hours after install: still protected.
-    expect(decideBreak(cfg, 'deck_break', { ...c, sessions: 3 }, s, ctx(T0 + 2 * H), 1)).toEqual({ ok: false, reason: 'new_user' });
+    // From the 2nd session on, they can see one.
+    expect(decideBreak(cfg, 'deck_break', { ...c, sessions: DEFAULT_POLICY.minSessionsForFullscreen }, s, ctx(T0 + 2 * H), 1)).toEqual({ ok: true });
   });
 
   test('a veteran at a natural break gets an interstitial', () => {
@@ -150,15 +159,21 @@ describe('ads policy', () => {
     const { c, s } = veteran(now);
     expect(decideBreak(cfg, 'deck_break', { ...c, lastFullscreenAt: now - 60e3 }, s, ctx(now), 1)).toEqual({ ok: false, reason: 'too_soon' });
     expect(decideBreak(cfg, 'deck_break', { ...c, lastRewardedAt: now - 30e3 }, s, ctx(now), 1)).toEqual({ ok: false, reason: 'rewarded_cooldown' });
-    expect(decideBreak(cfg, 'deck_break', c, { ...s, fullscreen: 3 }, ctx(now), 1)).toEqual({ ok: false, reason: 'session_cap' });
-    expect(decideBreak(cfg, 'deck_break', { ...c, fullscreenToday: 8 }, s, ctx(now), 1)).toEqual({ ok: false, reason: 'daily_cap' });
+    expect(decideBreak(cfg, 'deck_break', c, { ...s, fullscreen: DEFAULT_POLICY.maxFullscreenPerSession }, ctx(now), 1)).toEqual({ ok: false, reason: 'session_cap' });
+    expect(decideBreak(cfg, 'deck_break', { ...c, fullscreenToday: DEFAULT_POLICY.maxFullscreenPerDay }, s, ctx(now), 1)).toEqual({ ok: false, reason: 'daily_cap' });
   });
 
-  test('everyNth: arcade breaks show on every 2nd round', () => {
+  test('arcade breaks can show after every game (the gap and caps still apply)', () => {
     const now = T0 + 3 * D;
     const { c, s } = veteran(now);
-    expect(decideBreak(cfg, 'arcade_break', c, s, ctx(now), 1)).toEqual({ ok: false, reason: 'not_nth_break' });
+    expect(decideBreak(cfg, 'arcade_break', c, s, ctx(now), 1)).toEqual({ ok: true });
     expect(decideBreak(cfg, 'arcade_break', c, s, ctx(now), 2)).toEqual({ ok: true });
+    expect(decideBreak(cfg, 'arcade_break', { ...c, lastFullscreenAt: now - 30e3 }, s, ctx(now), 3)).toEqual({ ok: false, reason: 'too_soon' });
+  });
+
+  test("app-open is on everywhere except the family apps and Granny's Vault", () => {
+    for (const app of ['stackup', 'loopday', 'flipped', 'afterhours', 'shiftledger', 'worthit', 'thirsty', 'braindump']) expect(cfgFor(app).placements.app_open?.enabled).toBe(true);
+    for (const app of ['kidquest', 'reset', 'grannysvault']) expect(cfgFor(app).placements.app_open).toBeUndefined();
   });
 
   test('lapsed users get a quiet session', () => {
@@ -184,17 +199,17 @@ describe('ads policy', () => {
     expect(decideRewarded(cfg, 'deck_break', c, ctx(T0)).ok).toBe(false);
   });
 
-  test('app open: off by default, launcher only, long background, after day 3', () => {
-    const on: ResolvedAds = { ...cfg, placements: { ...cfg.placements, app_open: { format: 'app_open', enabled: true } } };
+  test('app open: launcher only, after a real break, from day 1, capped', () => {
+    const off: ResolvedAds = { ...cfg, placements: { ...cfg.placements, app_open: { format: 'app_open', enabled: false } } };
     const now = T0 + 4 * D;
     const { c, s } = veteran(now);
     const base = { ...ctx(now), entry: 'launcher' as const, backgroundMs: 2 * H };
-    expect(decideAppOpen(cfg, c, s, base)).toEqual({ ok: false, reason: 'disabled' });
-    expect(decideAppOpen(on, c, s, base)).toEqual({ ok: true });
-    expect(decideAppOpen(on, c, s, { ...base, entry: 'notification' })).toEqual({ ok: false, reason: 'entry_point' });
-    expect(decideAppOpen(on, c, s, { ...base, backgroundMs: 5 * 60e3 })).toEqual({ ok: false, reason: 'short_background' });
-    expect(decideAppOpen(on, { ...c, appOpenToday: 1 }, s, base)).toEqual({ ok: false, reason: 'daily_cap' });
-    expect(decideAppOpen(on, { ...c, installAt: now - D }, s, base)).toEqual({ ok: false, reason: 'new_user' });
+    expect(decideAppOpen(off, c, s, base)).toEqual({ ok: false, reason: 'disabled' });
+    expect(decideAppOpen(cfg, c, s, base)).toEqual({ ok: true });
+    expect(decideAppOpen(cfg, c, s, { ...base, entry: 'notification' })).toEqual({ ok: false, reason: 'entry_point' });
+    expect(decideAppOpen(cfg, c, s, { ...base, backgroundMs: 5 * 60e3 })).toEqual({ ok: false, reason: 'short_background' });
+    expect(decideAppOpen(cfg, { ...c, appOpenToday: DEFAULT_POLICY.appOpen.maxPerDay }, s, base)).toEqual({ ok: false, reason: 'daily_cap' });
+    expect(decideAppOpen(cfg, { ...c, installAt: now - 2 * H }, s, base)).toEqual({ ok: false, reason: 'new_user' });
   });
 
   test('recording a full-screen ad counts it for the day and the session', () => {
@@ -309,7 +324,7 @@ describe('ads manager', () => {
 
   test('no-fill retries with backoff, then stops', async () => {
     const f = fakeSdk({ fill: false });
-    const { m, ads } = make('afterhours', f);
+    const { m, ads } = make('plateweek', f);
     await m.start();
     m.prepare('arcade_double');
     expect(ads).toHaveLength(1);
@@ -321,6 +336,87 @@ describe('ads manager', () => {
     await jest.advanceTimersByTimeAsync(10 * 60e3);
     expect(ads).toHaveLength(4);
     expect(m.rewardedReady('arcade_double')).toBe(false);
+  });
+
+  test('cold launch after a day away: an app-open ad, then no interstitial straight after it', async () => {
+    const first = make('worthit');
+    await first.m.start();
+    first.m.onBackground();
+    clock += H;
+    const second = make('worthit');
+    second.m.onBackground();
+    clock += 25 * H;
+    const { m, ads } = make('worthit');
+    await m.start();
+    await jest.advanceTimersByTimeAsync(500);
+    expect(ads.filter((a) => a.format === 'app_open' && a.shown === 1)).toHaveLength(1);
+    // Counts towards the full-screen gap: a break right after it shows nothing.
+    clock += 40e3;
+    expect(await m.atBreak('arcade_break')).toBe(false);
+    expect(m.recent[0]).toMatchObject({ placement: 'arcade_break', result: 'too_soon' });
+  });
+
+  test('force-close and reopen a minute later: no app-open ad', async () => {
+    const a = make('shiftledger');
+    await a.m.start();
+    a.m.onBackground();
+    clock += 2 * D;
+    const b = make('shiftledger');
+    await b.m.start();
+    b.m.onBackground();
+    clock += 60e3;
+    const { m, ads } = make('shiftledger');
+    await m.start();
+    await jest.advanceTimersByTimeAsync(500);
+    expect(ads.some((x) => x.format === 'app_open' && x.shown > 0)).toBe(false);
+    expect(m.recent.some((r) => r.placement === 'app_open' && r.result === 'short_background')).toBe(true);
+  });
+
+  test('arcade breaks: the timing model never shows more than the policy allows', async () => {
+    const one = make('braindump');
+    await one.m.start();
+    one.m.onBackground();
+    clock += 2 * D;
+    const { m, ads } = make('braindump');
+    await m.start();
+    clock += 60e3; // past the session grace
+    let shown = 0;
+    for (let i = 0; i < 40; i++) {
+      const p = m.atBreak('arcade_break');
+      await jest.runOnlyPendingTimersAsync();
+      if (await p) shown++;
+      clock += 20e3; // a 20-second game
+    }
+    // 40 games over ~13 minutes: never more than the session cap, never closer than the gap.
+    expect(shown).toBeGreaterThan(0);
+    expect(shown).toBeLessThanOrEqual(5);
+    const times = ads.filter((a) => a.format === 'interstitial' && a.shown > 0);
+    expect(times.length).toBe(shown);
+    expect(m.recent.every((r) => r.result === 'shown' || ['too_soon', 'smart_hold', 'session_cap'].includes(r.result))).toBe(true);
+  });
+
+  test("an ad's own activity sending the app to the background is not the person leaving", async () => {
+    const one = make('daymark');
+    await one.m.start();
+    one.m.onBackground();
+    clock += 2 * D;
+    const { m } = make('daymark');
+    await m.start();
+    await jest.runOnlyPendingTimersAsync();
+    clock += 60e3;
+    m.prepare('arcade_break');
+    const before = JSON.parse(kv.get('daymark.ads.state')!).counters.lastActiveAt;
+    const p = m.atBreak('arcade_break');
+    // Android: AppState goes to background while the interstitial shows, then active again.
+    m.onBackground();
+    expect(await m.onForeground()).toBe(false);
+    await jest.runOnlyPendingTimersAsync();
+    expect(await p).toBe(true);
+    m.onBackground(); // a late background event straight after closing
+    const t = JSON.parse(kv.get('daymark.ads.timing')!);
+    expect(t.cur.exits).toBe(0);
+    expect(t.cur.ads).toBe(1);
+    expect(JSON.parse(kv.get('daymark.ads.state')!).counters.lastActiveAt).toBe(before);
   });
 
   test('loaded ads expire and are never shown stale', async () => {
