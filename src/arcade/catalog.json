@@ -120,7 +120,7 @@
       "name": "Case Closed",
       "emoji": "🕵️",
       "mechanic": "quiz",
-      "tier": "arcade_subscription",
+      "tier": "arcade",
       "how": "Read the fictional case file and reach the fairest verdict.",
       "teaches": "Judge patterns over moments, and check your own assumptions.",
       "seconds": 45,
