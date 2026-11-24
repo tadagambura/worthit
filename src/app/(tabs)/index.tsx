@@ -7,6 +7,8 @@ import { Button, Card, EmptyState, H1, Muted, Row, Screen, Section, Stack, Stron
 import { headline } from '@/domain/clarity';
 import { FREE_PEOPLE } from '@/brand';
 import { patternOf, usePeople } from '@/state/people';
+import '@/arcade';
+import { ArcadeEntry } from '@/kit/arcade/screens';
 
 export default function People() {
   const people = usePeople((s) => s.people);
@@ -60,6 +62,7 @@ export default function People() {
       ) : null}
       <Muted center>Private to this phone. WorthIt? reflects patterns and your feelings. It never scores a person.</Muted>
       <PaywallSheet visible={paywall} onClose={() => setPaywall(false)} reason={`Free WorthIt? follows ${FREE_PEOPLE} people at a time. Premium has no limit.`} />
+      <ArcadeEntry />
     </Screen>
   );
 }
