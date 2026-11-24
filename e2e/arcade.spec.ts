@@ -20,14 +20,16 @@ async function setup(page: Page, served: string[] = []) {
   });
 }
 
-async function openArcade(page: Page) {
-  await page.goto('/arcade');
-  // Apps with a lock screen (Granny's Vault) protect the arcade too.
+async function openScreen(page: Page, path: string, id: string) {
+  await page.goto(path);
+  // Apps with a lock screen (Granny's Vault) protect every screen.
   const unlock = page.getByTestId('unlock');
-  await expect(page.getByTestId('arcade').or(unlock)).toBeVisible();
+  await expect(page.getByTestId(id).or(unlock)).toBeVisible();
   if (await unlock.isVisible()) await unlock.click();
-  await expect(page.getByTestId('arcade')).toBeVisible();
+  await expect(page.getByTestId(id)).toBeVisible();
 }
+
+const openArcade = (page: Page) => openScreen(page, '/arcade', 'arcade');
 
 async function playAndEnd(page: Page) {
   await page.getByTestId('game-start').click();
@@ -66,15 +68,54 @@ test('free games download on demand, once', async ({ page }) => {
   await expect(page.getByTestId(`game-${g.id}`)).toContainText('Downloaded');
 });
 
-test('KC Arcade games are locked until bought, then stay unlocked', async ({ page }) => {
+test('a paid game can be bought on its own for £0.99, then stays unlocked', async ({ page }) => {
   await setup(page);
   await openArcade(page);
-  const g = catalog.games.find((x) => x.tier === 'arcade' && x.mechanic !== 'route')!;
+  const paid = catalog.games.filter((x) => x.tier === 'arcade' && x.mechanic !== 'route');
+  const [g, other] = paid;
+  await expect(page.getByTestId(`game-${g.id}`)).toContainText('£0.99');
   await page.getByTestId(`game-${g.id}`).click();
   await expect(page.getByTestId('paywall')).toBeVisible();
-  await expect(page.getByTestId('paywall-buy')).toContainText('£14.99');
+  // The comparison: the locked games one by one, or all of them with Premium.
+  await expect(page.getByTestId('paywall-games-value')).toContainText(`£${(catalog.games.filter((x) => x.tier === 'arcade').length * 0.99).toFixed(2)}`);
+  await expect(page.getByTestId('paywall-buy')).toContainText('£0.99');
   await page.getByTestId('paywall-buy').click();
   await page.getByTestId('paywall-done').click();
   await page.getByTestId(`game-${g.id}`).click();
   await expect(page.getByTestId('game-start')).toBeVisible();
+  // Only that game: the next paid game is still locked.
+  await openArcade(page);
+  await expect(page.getByTestId(`game-${other.id}`)).toContainText('£0.99');
+});
+
+test('app Premium unlocks every game in this app', async ({ page }) => {
+  await setup(page);
+  await openArcade(page);
+  const g = catalog.games.find((x) => x.tier === 'arcade' && x.mechanic !== 'route')!;
+  await page.getByTestId(`game-${g.id}`).click();
+  await page.getByTestId('paywall-see-premium').click();
+  await page.getByTestId('plan-monthly').click();
+  await expect(page.getByTestId('paywall-buy')).toContainText('£3.49');
+  await page.getByTestId('paywall-buy').click();
+  await page.getByTestId('paywall-done').click();
+  for (const x of catalog.games.filter((y) => y.tier === 'arcade')) await expect(page.getByTestId(`game-${x.id}`)).not.toContainText('£0.99');
+});
+
+test('KC All Access needs a KC account, then takes £25 once and the subscription', async ({ page }) => {
+  await setup(page);
+  await openScreen(page, '/settings', 'settings');
+  await page.getByTestId('settings-allaccess').click();
+  // No KC account yet: no way to pay, so nobody can be charged twice across apps.
+  await expect(page.getByTestId('paywall')).toContainText('coming soon');
+  await expect(page.getByTestId('paywall-buy')).toHaveCount(0);
+  await openScreen(page, '/settings', 'settings');
+  await page.getByTestId('test-signin').click();
+  await page.getByTestId('settings-allaccess').click();
+  await expect(page.getByTestId('paywall-allaccess-parts')).toContainText('£25.00 once');
+  await expect(page.getByTestId('paywall-buy')).toContainText('Pay £25.00 now, then £79.99 a year');
+  await page.getByTestId('paywall-buy').click();
+  await expect(page.getByTestId('paywall-success')).toContainText('All Access is on');
+  await page.getByTestId('paywall-done').click();
+  await openArcade(page);
+  for (const x of catalog.games.filter((y) => y.tier === 'arcade')) await expect(page.getByTestId(`game-${x.id}`)).not.toContainText('£0.99');
 });

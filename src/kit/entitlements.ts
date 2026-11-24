@@ -3,7 +3,7 @@
 // The entitlement resolver. Pure functions, no SDK: it takes a snapshot of what RevenueCat
 // says the customer owns and answers "what can this person use in this app right now?".
 // Every app and every gate goes through here, so access rules live in exactly one place.
-import { ENT, isAllAccessEligible, KC_APPS, type ProductLine } from './plans';
+import { andList, appName, ENT, gameKey, gameOfEntitlement, isAllAccessEligible, KC_APPS, type ProductLine } from './plans';
 
 export type Verification = 'verified' | 'verified_on_device' | 'not_requested' | 'failed';
 
@@ -31,6 +31,7 @@ export type Snapshot = {
   fetchedAt: string;
   managementUrl: string | null;
   appUserId: string | null;
+  /** True until the person signs in to a Kaotic Chainz account (RevenueCat logIn). */
   isAnonymous: boolean;
 };
 
@@ -50,13 +51,18 @@ export type Access = {
   premiumSource: 'all_access' | 'app_premium' | null;
   /** This app's own Premium subscription is active (even if All Access also covers it). */
   appPremium: boolean;
+  /** The KC All Access subscription (Premium in every app) is active. */
   allAccess: boolean;
-  /** Owns KC Arcade forever (one-off purchase). Survives any subscription ending. */
+  /** Owns the £25 part of All Access: every game in every app, forever. Survives any cancellation. */
   arcadePermanent: boolean;
-  /** Arcade through a subscription (All Access). Ends when the subscription ends. */
-  arcadeSubscription: boolean;
-  /** Any Arcade access at all. */
+  /** Every Arcade game in this app is playable (Premium here, All Access, or the £25 pass). */
   arcade: boolean;
+  /** Games of this app bought one by one (game keys, see plans.gameKey). Kept forever. */
+  games: string[];
+  /** Signed in to a KC account, so purchases follow the person across KC apps. */
+  signedIn: boolean;
+  /** Other KC apps where this person has an active Premium (needs a KC account to be seen). */
+  otherPremiums: string[];
   /** A paid subscription is active but the last renewal failed (store grace period). */
   billingIssue: { entitlement: string; since: string } | null;
   /** Subscriptions that were bought before and are no longer active (for "welcome back" UX). */
@@ -83,8 +89,16 @@ export function resolveAccess(snap: Snapshot, app: string, now: Date = new Date(
   const allAccess = has(ENT.allAccess);
   const appPremium = has(ENT.appPremium(app));
   const viaAll = allAccess && isAllAccessEligible(app);
+  const premium = viaAll || appPremium;
   const arcadePermanent = has(ENT.arcadePermanent);
-  const arcadeSubscription = has(ENT.arcadeSubscription) || allAccess;
+
+  const games = Object.values(ents)
+    .filter((e) => live(e, now))
+    .map((e) => gameOfEntitlement(app, e.id))
+    .filter((k): k is string => k != null)
+    .sort();
+
+  const otherPremiums = KC_APPS.filter((a) => a !== app && has(ENT.appPremium(a)));
 
   const billing = Object.values(ents)
     .filter((e) => live(e, now) && e.billingIssueAt && e.expiresAt)
@@ -103,13 +117,15 @@ export function resolveAccess(snap: Snapshot, app: string, now: Date = new Date(
 
   return {
     app,
-    premium: viaAll || appPremium,
+    premium,
     premiumSource: viaAll ? 'all_access' : appPremium ? 'app_premium' : null,
     appPremium,
     allAccess,
     arcadePermanent,
-    arcadeSubscription,
-    arcade: arcadePermanent || arcadeSubscription,
+    arcade: premium || arcadePermanent,
+    games,
+    signedIn: !snap.isAnonymous,
+    otherPremiums,
     billingIssue: billing[0] ?? null,
     expired,
     overlapping,
@@ -122,11 +138,12 @@ export function resolveAccess(snap: Snapshot, app: string, now: Date = new Date(
  * What a feature needs. Apps label features with these; they never check entitlements directly.
  * - free: everyone.
  * - premium: this app's Premium, or All Access.
- * - all_access: All Access only (portfolio perks).
- * - arcade: included KC Arcade games (permanent purchase or All Access).
- * - arcade_subscription: subscriber-only games (All Access).
+ * - all_access: the All Access subscription only (portfolio perks).
+ * - arcade: an Arcade game. Bought on its own for £0.99, or included with this app's Premium,
+ *   All Access, or the £25 every-game pass. For whole-bundle checks `can('arcade')` means
+ *   "every game in this app"; for one game use `canPlayGame()`.
  */
-export type Tier = 'free' | 'premium' | 'all_access' | 'arcade' | 'arcade_subscription';
+export type Tier = 'free' | 'premium' | 'all_access' | 'arcade';
 
 export function canUse(access: Access, tier: Tier): boolean {
   switch (tier) {
@@ -138,9 +155,13 @@ export function canUse(access: Access, tier: Tier): boolean {
       return access.allAccess;
     case 'arcade':
       return access.arcade;
-    case 'arcade_subscription':
-      return access.arcadeSubscription;
   }
+}
+
+/** One game: its own £0.99 purchase counts, as well as everything that unlocks the whole Arcade. */
+export function canPlayGame(access: Access, game: { id: string; tier: Tier }): boolean {
+  if (game.tier !== 'arcade') return canUse(access, game.tier);
+  return access.arcade || access.games.includes(gameKey(game.id));
 }
 
 /** Declare an app's features once: `export const FEATURES = defineFeatures({ whiteboard: 'premium' })`. */
@@ -150,8 +171,8 @@ export function defineFeatures<T extends Record<string, Tier>>(map: T): T {
 
 /** Which product line unlocks a tier, so a gate can open the right paywall tab. */
 export function lineForTier(tier: Tier): ProductLine {
-  if (tier === 'arcade') return 'arcade';
-  if (tier === 'premium') return 'app_premium';
+  // App Premium is the cheapest way to every game in this app; single games have their own sheet.
+  if (tier === 'premium' || tier === 'arcade') return 'app_premium';
   return 'all_access';
 }
 
@@ -159,26 +180,46 @@ export function lineForTier(tier: Tier): ProductLine {
 
 export type PurchaseCheck =
   | { ok: true; note?: string }
-  | { ok: false; reason: 'owned' | 'included'; message: string };
+  | { ok: false; reason: 'owned' | 'included' | 'sign_in'; message: string };
 
-export function checkPurchase(access: Access, line: ProductLine, appName: string): PurchaseCheck {
+const SIGN_IN =
+  'KC All Access needs a free Kaotic Chainz account, so it works in every app and you never pay twice. App Premium and single games work without one.';
+
+export function checkPurchase(access: Access, line: ProductLine, appName_: string, gameId?: string): PurchaseCheck {
   if (line === 'app_premium') {
     if (access.allAccess && isAllAccessEligible(access.app)) {
-      return { ok: false, reason: 'included', message: `${appName} Premium is already included in your KC All Access.` };
+      return { ok: false, reason: 'included', message: `${appName_} Premium is already included in your KC All Access.` };
     }
-    if (access.appPremium) return { ok: false, reason: 'owned', message: `You already have ${appName} Premium.` };
+    if (access.appPremium) return { ok: false, reason: 'owned', message: `You already have ${appName_} Premium.` };
+    if (access.games.length) {
+      const n = access.games.length;
+      return { ok: true, note: `The ${n === 1 ? 'game' : `${n} games`} you bought stay${n === 1 ? 's' : ''} yours forever, even if Premium ends.` };
+    }
     return { ok: true };
   }
   if (line === 'all_access') {
     if (access.allAccess) return { ok: false, reason: 'owned', message: 'You already have KC All Access.' };
-    if (access.appPremium) {
-      return { ok: true, note: `Your ${appName} Premium is switched to All Access, and the store credits the unused time.` };
+    if (!access.signedIn) return { ok: false, reason: 'sign_in', message: SIGN_IN };
+    const notes: string[] = [];
+    if (access.arcadePermanent) notes.push('You already own every game, so this is just the subscription.');
+    if (access.appPremium) notes.push(`Your ${appName_} Premium is switched to All Access, and the store credits the unused time.`);
+    const others = access.otherPremiums.filter((a) => a !== access.app);
+    if (others.length) {
+      notes.push(`Cancel your ${andList(others.map(appName))} Premium in your store subscriptions after this, so you don't pay twice. All Access covers ${others.length === 1 ? 'it' : 'them'}.`);
     }
+    return notes.length ? { ok: true, note: notes.join(' ') } : { ok: true };
+  }
+  if (line === 'arcade') {
+    if (access.arcadePermanent) return { ok: false, reason: 'owned', message: 'Every game in every KC app is already yours, forever.' };
+    if (!access.signedIn) return { ok: false, reason: 'sign_in', message: SIGN_IN };
     return { ok: true };
   }
-  if (access.arcadePermanent) return { ok: false, reason: 'owned', message: 'You already own KC Arcade.' };
-  if (access.arcadeSubscription) {
-    return { ok: true, note: 'All Access already includes the Arcade while you subscribe. Buying it keeps the included games forever.' };
+  // A single game.
+  if (gameId && access.games.includes(gameKey(gameId))) return { ok: false, reason: 'owned', message: 'You already own this game.' };
+  if (access.arcadePermanent) return { ok: false, reason: 'included', message: 'Every game is already yours with KC All Access.' };
+  if (access.premium) {
+    const via = access.premiumSource === 'all_access' ? 'KC All Access' : `${appName_} Premium`;
+    return { ok: false, reason: 'included', message: `This game is included in your ${via}.` };
   }
   return { ok: true };
 }
@@ -186,4 +227,15 @@ export function checkPurchase(access: Access, line: ProductLine, appName: string
 /** "stackup_premium" -> "stackup". */
 export function appOfEntitlement(id: string): string | null {
   return id.endsWith('_premium') ? id.slice(0, -'_premium'.length) : null;
+}
+
+/**
+ * Should this app suggest KC All Access to someone who already pays for Premium in another KC
+ * app? Only when we can actually see that (signed in), only if All Access isn't already on,
+ * and never more often than every `everyDays` (no nagging).
+ */
+export function crossAppOffer(access: Access, lastShownAt: number | null, now: number, everyDays = 30): boolean {
+  if (!access.signedIn || access.allAccess || !access.otherPremiums.length) return false;
+  if (!isAllAccessEligible(access.app)) return false;
+  return lastShownAt == null || now - lastShownAt >= everyDays * 86_400_000;
 }

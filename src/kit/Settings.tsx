@@ -12,6 +12,7 @@ import { debugEvents, analyticsMode } from './analytics';
 import { deleteAllData, exportData } from './data';
 import { useFeedback } from './feedback';
 import { PaywallSheet } from './Paywall';
+import { andList, appName } from './plans';
 import { prefsStore } from './prefs';
 import { usePremium } from './premium';
 import { disableReminder, enableDailyReminder, reminderError, remindersSupported } from './reminders';
@@ -40,7 +41,7 @@ export function KitSettings({ children, reminder, onDataDeleted }: { children?: 
   const { toast, confirm } = useFeedback();
   const usePrefs = prefsStore(brand.slug);
   const prefs = usePrefs();
-  const [paywall, setPaywall] = useState<false | 'app_premium' | 'all_access' | 'arcade'>(false);
+  const [paywall, setPaywall] = useState<false | 'app_premium' | 'all_access'>(false);
   const [showDebug, setShowDebug] = useState(false);
   const ads = useAdSettings();
   const version = Constants.expoConfig?.version ?? '1.0.0';
@@ -104,7 +105,9 @@ export function KitSettings({ children, reminder, onDataDeleted }: { children?: 
       <Section title="Premium">
         <Card>
           {access.billingIssue ? <Note tone="warning">{"Your last payment didn't go through. The store is retrying; update your payment details to keep Premium."}</Note> : null}
-          {access.overlapping.length ? <Note tone="warning">You have All Access plus an app Premium still renewing. Cancel the extra one so you are not paying twice.</Note> : null}
+          {access.overlapping.length ? (
+            <Note tone="warning">{`You have All Access plus ${andList(access.overlapping.map((id) => `${appName(id.replace(/_premium$/, ''))} Premium`))} still renewing. Cancel the extra in your store subscriptions so you are not paying twice.`}</Note>
+          ) : null}
           <ListRow
             icon="star-outline"
             title={isPremium ? (access.premiumSource === 'all_access' ? 'Premium is on (KC All Access)' : 'Premium is on') : `${brand.name} Premium`}
@@ -113,13 +116,23 @@ export function KitSettings({ children, reminder, onDataDeleted }: { children?: 
             testID="settings-premium"
           />
           <Divider />
-          <ListRow icon="planet-outline" title="KC All Access" subtitle={access.allAccess ? 'On: every app, every game' : 'Every Kaotic Chainz app and the whole Arcade'} onPress={() => setPaywall('all_access')} testID="settings-allaccess" />
-          <Divider />
-          <ListRow icon="game-controller-outline" title="KC Arcade" subtitle={access.arcadePermanent ? 'Yours forever' : access.arcade ? 'Included with All Access' : 'One payment, yours to keep'} onPress={() => setPaywall('arcade')} testID="settings-arcade" />
+          <ListRow
+            icon="planet-outline"
+            title="KC All Access"
+            subtitle={access.allAccess ? 'On: Premium in every app, every game' : access.arcadePermanent ? 'Every game is yours. Add Premium in every app.' : 'Premium in every KC app, every game yours forever'}
+            onPress={() => setPaywall('all_access')}
+            testID="settings-allaccess"
+          />
           {arcade() ? (
             <>
               <Divider />
-              <ListRow icon="happy-outline" title={`Play the ${arcade()!.catalog.title}`} subtitle={`${arcade()!.catalog.games.length} quick games`} onPress={() => router.push('/arcade' as never)} testID="settings-play-arcade" />
+              <ListRow
+                icon="game-controller-outline"
+                title={`Play the ${arcade()!.catalog.title}`}
+                subtitle={`${arcade()!.catalog.games.length} quick games · ${access.arcade ? 'all unlocked' : access.games.length ? `${access.games.length} bought, yours to keep` : 'buy single games, or get them all with Premium'}`}
+                onPress={() => router.push('/arcade' as never)}
+                testID="settings-play-arcade"
+              />
             </>
           ) : null}
           <Divider />
@@ -287,6 +300,7 @@ export function KitSettings({ children, reminder, onDataDeleted }: { children?: 
                   <Chip label="Next: pending" onPress={() => test.failNext('20')} />
                   <Chip label="Next: offline" onPress={() => test.failNext('10')} />
                   <Chip label="Reset purchases" onPress={() => test.reset()} testID="test-reset" />
+                  <Chip label={access.signedIn ? 'Sign out (KC account)' : 'Sign in (KC account)'} onPress={() => (access.signedIn ? test.signOut() : test.signIn())} testID="test-signin" />
                 </Row>
               </>
             ) : null}

@@ -9,6 +9,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useRewardedAd } from '../ads';
 import { todayKey } from '../dates';
 import { lineForTier, type Tier } from '../entitlements';
+import { gameKey } from '../plans';
 import { PaywallSheet } from '../Paywall';
 import { usePremium } from '../premium';
 import { useTheme } from '../theme';
@@ -16,26 +17,18 @@ import { Body, Button, Card, H1, Muted, Note, Row, Screen, Section, Stack, Stron
 import { dailyGame } from './engine';
 import { loadPack, packState } from './packs';
 import { GameShell } from './Shell';
-import type { ArcadeCatalog, GameMeta, Pack } from './types';
+import { arcade } from './registry';
+import type { GameMeta, Pack } from './types';
 import { DAILY_BONUS, walletStore } from './wallet';
 
-type Registered = { catalog: ArcadeCatalog; bundled: Record<string, Pack> };
-let registered: Registered | null = null;
-
-export function registerArcade(catalog: ArcadeCatalog, bundled: Record<string, Pack>) {
-  registered = { catalog, bundled };
-}
-
-export function arcade(): Registered | null {
-  return registered;
-}
+// The registry lives in ./registry (no UI imports) so billing can read the game list too.
+export { arcade, registerArcade } from './registry';
 
 const TIER_BADGE: Record<Tier, string> = {
   free: 'Free',
   premium: 'Premium',
   all_access: 'All Access',
   arcade: 'KC Arcade',
-  arcade_subscription: 'All Access exclusive',
 };
 
 function kb(bytes: number) {
@@ -44,20 +37,25 @@ function kb(bytes: number) {
 
 export function ArcadeHome() {
   const { c, radius } = useTheme();
-  const { can } = usePremium();
-  const reg = registered;
+  const { canPlay, products, loadProducts } = usePremium();
+  const reg = arcade();
   const useWallet = walletStore(reg?.catalog.app ?? 'none');
   const wallet = useWallet();
-  const [paywall, setPaywall] = useState<Tier | null>(null);
+  const [paywall, setPaywall] = useState<GameMeta | null>(null);
   const bonus = useRewardedAd('arcade_daily');
   const [claiming, setClaiming] = useState(false);
+  // Prices for the locked badges ("£0.99"), straight from the store.
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
   if (!reg) return <Screen><Body>The arcade isn't set up in this app yet.</Body></Screen>;
   const { catalog, bundled } = reg;
-  const daily = dailyGame(catalog, todayKey(), (g) => can(g.tier));
+  const daily = dailyGame(catalog, todayKey(), canPlay);
+  const priceOf = (g: GameMeta) => products.items.find((p) => p.line === 'game' && p.gameId === gameKey(g.id))?.priceString;
   const dailyDone = wallet.dailyDone === todayKey();
 
   const open = (g: GameMeta, isDaily = false) => {
-    if (!can(g.tier)) return setPaywall(g.tier);
+    if (!canPlay(g)) return setPaywall(g);
     if (g.mechanic === 'route' && g.route) return router.push(g.route as never);
     router.push(`/arcade/${g.id}${isDaily ? '?daily=1' : ''}` as never);
   };
@@ -105,11 +103,12 @@ export function ArcadeHome() {
       <Section title="Games">
         <Stack gap={10}>
           {catalog.games.map((g) => {
-            const locked = !can(g.tier);
+            const locked = !canPlay(g);
+            const badge = g.tier === 'arcade' ? (priceOf(g) ?? 'Locked') : TIER_BADGE[g.tier];
             const state = g.mechanic === 'route' ? 'bundled' : packState(catalog.app, g, bundled);
             const best = wallet.best[g.id];
             return (
-              <Card key={g.id} onPress={() => open(g)} testID={`game-${g.id}`} accessibilityLabel={`${g.name}. ${g.how}${locked ? `. ${TIER_BADGE[g.tier]}` : ''}`}>
+              <Card key={g.id} onPress={() => open(g)} testID={`game-${g.id}`} accessibilityLabel={`${g.name}. ${g.how}${locked ? `. Locked, ${badge}` : ''}`}>
                 <Row gap={12} style={{ alignItems: 'flex-start' }}>
                   <View style={{ width: 52, height: 52, borderRadius: radius, backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ fontSize: 28 }}>{g.emoji}</Text>
@@ -120,7 +119,7 @@ export function ArcadeHome() {
                       {locked ? (
                         <Row gap={4}>
                           <Ionicons name="lock-closed" size={14} color={c.textMuted} />
-                          <Muted>{TIER_BADGE[g.tier]}</Muted>
+                          <Muted>{badge}</Muted>
                         </Row>
                       ) : g.flagship ? (
                         <Muted>★ Flagship</Muted>
@@ -139,8 +138,9 @@ export function ArcadeHome() {
       <PaywallSheet
         visible={!!paywall}
         onClose={() => setPaywall(null)}
-        line={paywall ? lineForTier(paywall) : 'arcade'}
-        reason={paywall === 'arcade_subscription' ? 'This one is a KC All Access exclusive.' : 'This game is part of KC Arcade: every included game in every Kaotic Chainz app, yours to keep for £14.99. All Access includes it too.'}
+        line={paywall?.tier === 'arcade' ? 'game' : paywall ? lineForTier(paywall.tier) : 'app_premium'}
+        game={paywall?.tier === 'arcade' ? { id: paywall.id, name: paywall.name, emoji: paywall.emoji } : undefined}
+        reason={paywall?.teaches}
       />
     </Screen>
   );
@@ -148,14 +148,14 @@ export function ArcadeHome() {
 
 export function ArcadeGame() {
   const { c } = useTheme();
-  const { can } = usePremium();
+  const { canPlay } = usePremium();
   const { game: id, daily } = useLocalSearchParams<{ game: string; daily?: string }>();
-  const reg = registered;
+  const reg = arcade();
   const game = reg?.catalog.games.find((g) => g.id === id);
   const [pack, setPack] = useState<Pack | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tries, setTries] = useState(0);
-  const allowed = !!game && can(game.tier);
+  const allowed = !!game && canPlay(game);
 
   const load = useCallback(() => {
     if (!reg || !game || !allowed) return;
@@ -173,7 +173,7 @@ export function ArcadeGame() {
   if (!allowed) {
     return (
       <Screen>
-        <Note>{`${game.name} is part of ${TIER_BADGE[game.tier]}.`}</Note>
+        <Note>{game.tier === 'arcade' ? `${game.name} is a paid game. Buy it on its own, or get every game with Premium.` : `${game.name} is part of ${TIER_BADGE[game.tier]}.`}</Note>
         <Button title="Back to the arcade" onPress={exit} />
       </Screen>
     );
@@ -201,7 +201,7 @@ export function ArcadeGame() {
 /** The arcade's front door, for an app's home screen. */
 export function ArcadeEntry() {
   const { c } = useTheme();
-  const reg = registered;
+  const reg = arcade();
   const useWallet = walletStore(reg?.catalog.app ?? 'none');
   const balance = useWallet((s) => s.balance);
   if (!reg) return null;
