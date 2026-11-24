@@ -33,9 +33,11 @@ jobs:
         run: npx tsc --noEmit
       - name: Unit tests
         run: npx jest --ci
-      - name: Web build
+      - name: Web build (test mode, so journeys can open Premium screens)
         run: npx expo export --platform web --output-dir dist
+        env:
+          EXPO_PUBLIC_TEST_MODE: '1'
       - name: Journey tests (Chrome, phone viewport)
-        run: npx playwright test e2e/journey.spec.ts
+        run: npx playwright test e2e/journey.spec.ts e2e/arcade.spec.ts
         env:
           CI: '1'

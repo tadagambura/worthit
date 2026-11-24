@@ -1,0 +1,134 @@
+{
+  "app": "worthit",
+  "title": "Detective Arcade",
+  "emoji": "🚩",
+  "currency": {
+    "name": "Detective points",
+    "one": "detective point",
+    "emoji": "🔍"
+  },
+  "unlocks": "investigation themes, badges and profile decorations",
+  "games": [
+    {
+      "id": "red-or-green",
+      "name": "Red Flag or Green Flag?",
+      "emoji": "🚩",
+      "mechanic": "sort",
+      "tier": "free",
+      "how": "Read the fictional situation and call it: red, beige or green flag.",
+      "teaches": "Spot healthy and unhealthy patterns. Reflection only: never a label for a real person.",
+      "seconds": 45,
+      "flagship": true,
+      "pack": {
+        "file": "worthit/red-or-green.ddfb497e71.json",
+        "sha256": "ddfb497e7174ce782a2df38efd67c4511fb7d991339fe4cb8491e361a4c90618",
+        "bytes": 1572
+      }
+    },
+    {
+      "id": "excuse-or-explanation",
+      "name": "Excuse or Explanation?",
+      "emoji": "🤔",
+      "mechanic": "sort",
+      "tier": "free",
+      "how": "Is this taking responsibility, or dodging it?",
+      "teaches": "Accountability sounds like owning it and changing it. Excuses shift the blame.",
+      "seconds": 45,
+      "pack": {
+        "file": "worthit/excuse-or-explanation.cc5bb3fcb2.json",
+        "sha256": "cc5bb3fcb22b8b8fcf013271fd79ce4b31976c10718689c5f37db17e237aec31",
+        "bytes": 1006
+      }
+    },
+    {
+      "id": "behaviour-decoder",
+      "name": "Behaviour Decoder",
+      "emoji": "🧩",
+      "mechanic": "quiz",
+      "tier": "free",
+      "how": "What might this behaviour mean? Pick the most balanced reading.",
+      "teaches": "There's usually more than one explanation. Look at patterns, not single moments.",
+      "seconds": 45,
+      "pack": {
+        "file": "worthit/behaviour-decoder.705e2d1347.json",
+        "sha256": "705e2d1347dca4ac34a7a29bb6499bf2d7fd7901224cf7642e0247e8a7527dd5",
+        "bytes": 1787
+      }
+    },
+    {
+      "id": "text-detective",
+      "name": "Text Detective",
+      "emoji": "💬",
+      "mechanic": "quiz",
+      "tier": "arcade",
+      "how": "Read the fictional text. What pattern is it?",
+      "teaches": "Name communication patterns so you can respond, not react.",
+      "seconds": 45,
+      "pack": {
+        "file": "worthit/text-detective.a1b59315c7.json",
+        "sha256": "a1b59315c73ce63b97c8cdab6b64200ed2d8c3c6b4c610558ddd924fdfcd661d",
+        "bytes": 1181
+      }
+    },
+    {
+      "id": "spot-the-flag",
+      "name": "Spot the Red Flag",
+      "emoji": "🔎",
+      "mechanic": "quiz",
+      "tier": "arcade",
+      "how": "Which line in this fictional dating profile is the concern?",
+      "teaches": "Read profiles for respect, not just looks.",
+      "seconds": 45,
+      "pack": {
+        "file": "worthit/spot-the-flag.25a2f4d167.json",
+        "sha256": "25a2f4d1679247cfd3946f67d63889ba50e21ed733af78f292b936e2c702cd47",
+        "bytes": 1047
+      }
+    },
+    {
+      "id": "green-flag-pairs",
+      "name": "Green Flag Pairs",
+      "emoji": "🟩",
+      "mechanic": "memory",
+      "tier": "arcade",
+      "how": "Match each green-flag behaviour to what it shows.",
+      "teaches": "Learn what healthy looks like, so you can spot it.",
+      "seconds": 45,
+      "pack": {
+        "file": "worthit/green-flag-pairs.eab5527ac5.json",
+        "sha256": "eab5527ac5f8411e43627677cb9ec51948418f89ba0e3e0a2a16aa8eb631272c",
+        "bytes": 263
+      }
+    },
+    {
+      "id": "values-check",
+      "name": "Compatibility Chat",
+      "emoji": "🗣️",
+      "mechanic": "spinner",
+      "tier": "arcade",
+      "how": "Spin for a values question. Answer honestly, on your own or together.",
+      "teaches": "Shared values matter more than shared hobbies.",
+      "seconds": 45,
+      "pack": {
+        "file": "worthit/values-check.81a46545a8.json",
+        "sha256": "81a46545a8b0e75b2c19f7d1e6e089c8ae57baf12fb29f6398a9cfbf8da94926",
+        "bytes": 700
+      }
+    },
+    {
+      "id": "case-closed",
+      "name": "Case Closed",
+      "emoji": "🕵️",
+      "mechanic": "quiz",
+      "tier": "arcade_subscription",
+      "how": "Read the fictional case file and reach the fairest verdict.",
+      "teaches": "Judge patterns over moments, and check your own assumptions.",
+      "seconds": 45,
+      "pack": {
+        "file": "worthit/case-closed.882f12ba54.json",
+        "sha256": "882f12ba5417b1dc07d9a9e10ff2812215d940236bdb13085101c07d5330c943",
+        "bytes": 1100
+      }
+    }
+  ]
+}

@@ -4,7 +4,9 @@
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
+import { arcade } from './arcade/screens';
 import { debugEvents, analyticsMode } from './analytics';
 import { deleteAllData, exportData } from './data';
 import { useFeedback } from './feedback';
@@ -112,6 +114,12 @@ export function KitSettings({ children, reminder, onDataDeleted }: { children?: 
           <ListRow icon="planet-outline" title="KC All Access" subtitle={access.allAccess ? 'On: every app, every game' : 'Every Kaotic Chainz app and the whole Arcade'} onPress={() => setPaywall('all_access')} testID="settings-allaccess" />
           <Divider />
           <ListRow icon="game-controller-outline" title="KC Arcade" subtitle={access.arcadePermanent ? 'Yours forever' : access.arcade ? 'Included with All Access' : 'One payment, yours to keep'} onPress={() => setPaywall('arcade')} testID="settings-arcade" />
+          {arcade() ? (
+            <>
+              <Divider />
+              <ListRow icon="happy-outline" title={`Play the ${arcade()!.catalog.title}`} subtitle={`${arcade()!.catalog.games.length} quick games`} onPress={() => router.push('/arcade' as never)} testID="settings-play-arcade" />
+            </>
+          ) : null}
           <Divider />
           <ListRow
             icon="refresh"

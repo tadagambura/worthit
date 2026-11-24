@@ -265,3 +265,49 @@ describe('theme tiers', () => {
     for (const id of ['turquoise', 'green', 'pink', 'purple', 'orange', 'brown', 'black', 'white', 'gold', 'gray', 'navy', 'burgundy']) expect(ids).toContain(id);
   });
 });
+
+import { ageOn, clearExpiredLock, decideAge, EMPTY_AGE, recordDob, recordProvider, validDob } from '../age';
+
+describe('age assurance', () => {
+  const now = new Date('2026-11-23T12:00:00');
+  const policy = { requireProvider: false };
+  test('age maths, including the day before an 18th birthday and leap days', () => {
+    expect(ageOn({ y: 2008, m: 11, d: 23 }, now)).toBe(18);
+    expect(ageOn({ y: 2008, m: 11, d: 24 }, now)).toBe(17);
+    expect(ageOn({ y: 2008, m: 2, d: 29 }, new Date('2026-02-28T12:00:00'))).toBe(17);
+    expect(ageOn({ y: 2008, m: 2, d: 29 }, new Date('2026-03-01T12:00:00'))).toBe(18);
+  });
+  test('rejects impossible dates', () => {
+    expect(validDob({ y: 2001, m: 2, d: 30 }, now)).toBe(false);
+    expect(validDob({ y: 2030, m: 1, d: 1 }, now)).toBe(false);
+    expect(validDob({ y: 1850, m: 1, d: 1 }, now)).toBe(false);
+    expect(validDob({ y: 2000, m: 2, d: 29 }, now)).toBe(true);
+  });
+  test('an adult date of birth unlocks; the date itself is not kept', () => {
+    const r = recordDob({ y: 1995, m: 6, d: 1 }, now);
+    expect(r).toEqual({ status: 'adult', method: 'self_declared', checkedAt: now.toISOString(), lockedUntil: null });
+    expect(JSON.stringify(r)).not.toContain('1995');
+    expect(decideAge(r, 'unknown', policy, now).allowed).toBe(true);
+  });
+  test('an under-18 answer locks retries for a day, then can be cleared', () => {
+    const r = recordDob({ y: 2010, m: 1, d: 1 }, now);
+    expect(decideAge(r, 'unknown', policy, now).reason).toBe('locked');
+    const later = new Date(now.getTime() + 25 * 3600_000);
+    expect(clearExpiredLock(r, later)).toEqual(EMPTY_AGE);
+  });
+  test('the store saying "under 18" always wins', () => {
+    const r = recordDob({ y: 1990, m: 1, d: 1 }, now);
+    expect(decideAge(r, 'minor', policy, now)).toEqual({ allowed: false, reason: 'store_minor' });
+    expect(decideAge(EMPTY_AGE, 'adult', policy, now).allowed).toBe(true);
+  });
+  test('a year-old confirmation is asked again', () => {
+    const r = recordDob({ y: 1990, m: 1, d: 1 }, new Date('2025-11-01T12:00:00'));
+    expect(decideAge(r, 'unknown', policy, now).reason).toBe('needs_check');
+  });
+  test('when a provider is required, a typed date of birth is not enough (fail closed)', () => {
+    const strict = { requireProvider: true };
+    expect(decideAge(recordDob({ y: 1990, m: 1, d: 1 }, now), 'unknown', strict, now).reason).toBe('needs_provider');
+    expect(decideAge(recordProvider('adult', now), 'unknown', strict, now).allowed).toBe(true);
+    expect(recordProvider('unknown', now)).toEqual(EMPTY_AGE);
+  });
+});
