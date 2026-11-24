@@ -412,11 +412,78 @@ describe('ads manager', () => {
     expect(await m.onForeground()).toBe(false);
     await jest.runOnlyPendingTimersAsync();
     expect(await p).toBe(true);
-    m.onBackground(); // a late background event straight after closing
-    const t = JSON.parse(kv.get('daymark.ads.timing')!);
+    let t = JSON.parse(kv.get('daymark.ads.timing')!);
     expect(t.cur.exits).toBe(0);
     expect(t.cur.ads).toBe(1);
     expect(JSON.parse(kv.get('daymark.ads.state')!).counters.lastActiveAt).toBe(before);
+    // But closing the ad and pressing home straight away IS leaving: it's recorded for the model and the session.
+    clock += 1_000;
+    m.onBackground();
+    expect(JSON.parse(kv.get('daymark.ads.state')!).counters.lastActiveAt).toBe(clock);
+    const sessionsBefore = JSON.parse(kv.get('daymark.ads.state')!).counters.sessions;
+    clock += 31 * 60e3;
+    const f = m.onForeground();
+    await jest.runOnlyPendingTimersAsync();
+    await f;
+    t = JSON.parse(kv.get('daymark.ads.timing')!);
+    expect(t.cur.breaks).toBe(0); // timing.startSession ran
+    expect(JSON.parse(kv.get('daymark.ads.state')!).counters.sessions).toBe(sessionsBefore + 1);
+    expect(m.recent.some((r) => r.placement === 'app_open')).toBe(true); // app-open was considered
+  });
+
+  test('warm app-open between 10 and 30 minutes away, without starting a new session', async () => {
+    const a = make('keepit');
+    await a.m.start();
+    a.m.onBackground();
+    clock += 2 * D;
+    const b = make('keepit');
+    await b.m.start();
+    b.m.onBackground();
+    clock += 2 * D;
+    const { m, ads } = make('keepit');
+    await m.start();
+    await jest.runOnlyPendingTimersAsync();
+    const coldOpens = ads.filter((x) => x.format === 'app_open' && x.shown > 0).length;
+    const sessions = JSON.parse(kv.get('keepit.ads.state')!).counters.sessions;
+    clock += 60e3;
+    const brk = m.atBreak('arcade_break');
+    await jest.runOnlyPendingTimersAsync();
+    await brk;
+    const breaksBefore = JSON.parse(kv.get('keepit.ads.timing')!).cur.breaks;
+    expect(breaksBefore).toBeGreaterThan(0);
+    clock += 10 * 60e3;
+    m.onBackground();
+    clock += 15 * 60e3;
+    m.prepare('app_open');
+    const p = m.onForeground();
+    await jest.runOnlyPendingTimersAsync();
+    expect(await p).toBe(true);
+    expect(ads.filter((x) => x.format === 'app_open' && x.shown > 0).length).toBe(coldOpens + 1);
+    expect(JSON.parse(kv.get('keepit.ads.state')!).counters.sessions).toBe(sessions);
+    expect(JSON.parse(kv.get('keepit.ads.timing')!).cur.breaks).toBe(breaksBefore); // same session carries on
+    // Five minutes away: nothing.
+    m.onBackground();
+    clock += 5 * 60e3;
+    expect(await m.onForeground()).toBe(false);
+  });
+
+  test('sessions still restart after 30 minutes even if remote config raises the app-open minimum', async () => {
+    const remote = { version: 1, policy: { appOpen: { minBackgroundMinutes: 60 } } };
+    const mk = () => new AdsManager('studysprint', { sdk: fakeSdk().sdk, testMode: true, platform: 'android', now, fetchRemote: async () => remote });
+    const first = mk();
+    await first.start();
+    await jest.runOnlyPendingTimersAsync();
+    const m = mk(); // picks up the cached remote config
+    expect(m.cfg.policy.appOpen.minBackgroundMinutes).toBe(60);
+    await m.start();
+    await jest.runOnlyPendingTimersAsync();
+    const sessions = JSON.parse(kv.get('studysprint.ads.state')!).counters.sessions;
+    m.onBackground();
+    clock += 45 * 60e3;
+    const f = m.onForeground();
+    await jest.runOnlyPendingTimersAsync();
+    expect(await f).toBe(false); // 45 min < 60: no app-open
+    expect(JSON.parse(kv.get('studysprint.ads.state')!).counters.sessions).toBe(sessions + 1);
   });
 
   test('loaded ads expire and are never shown stale', async () => {
