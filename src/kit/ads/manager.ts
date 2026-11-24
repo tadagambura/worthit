@@ -21,8 +21,6 @@ const REMOTE_MAX_AGE_MS = 6 * 3600e3;
 const COLD_OPEN_WAIT_MS = 3000;
 /** Cold-launch app-open only right at launch, never once someone is already using the app. */
 const COLD_OPEN_WINDOW_MS = 8000;
-/** After a full-screen ad closes, ignore background events for this long (Android's ad activity). */
-const AD_ACTIVITY_GRACE_MS = 2000;
 /** If a full-screen ad never reports "closed", carry on anyway. */
 const SHOW_WATCHDOG_MS = 3 * 60e3;
 
@@ -78,7 +76,6 @@ export class AdsManager {
    * reports the app as "background" while it shows. That must not count as leaving the app.
    */
   private adShowing = false;
-  private adClosedAt = 0;
   private state: Persisted;
   private session: SessionState;
   private slots = new Map<string, Slot>();
@@ -269,9 +266,12 @@ export class AdsManager {
   /** The app went to the background. */
   onBackground() {
     const now = this.deps.now();
-    // A full-screen ad opening (or just closing) isn't the person leaving.
-    if (this.adShowing || now - this.adClosedAt < AD_ACTIVITY_GRACE_MS) return;
+    // A full-screen ad opening its own activity (Android) isn't the person leaving, so the timing
+    // model and lastActiveAt are left alone. backgroundAt is still set: if they really leave while
+    // the ad is up, coming back hours later starts a new session (coming back from the ad itself
+    // is only the ad's length away, well under the session timeout).
     this.backgroundAt = now;
+    if (this.adShowing) return;
     this.setCounters({ ...this.state.counters, lastActiveAt: now });
     // Only teaches the timing model (did they leave right after an ad?). Never shows anything.
     if (this.timing) this.setTiming(timing.onBackground(this.timing, now));
@@ -288,12 +288,18 @@ export class AdsManager {
     if (this.adShowing) return false;
     const away = this.backgroundAt ? now - this.backgroundAt : 0;
     this.backgroundAt = 0;
-    if (away < SESSION_TIMEOUT_MS) return false;
-    const s = startSession(this.state.counters, now, this.cfg.policy.lapsedDays);
-    this.session = s.session;
-    this.setCounters(s.counters);
-    if (this.timing) this.setTiming(timing.startSession(this.timing, this.deps.random));
-    void this.refreshRemote();
+    // Shorter than both the app-open minimum and the session timeout: nothing to do. (Remote config
+    // may raise minBackgroundMinutes past 30; sessions must still restart at 30.)
+    if (away < Math.min(this.cfg.policy.appOpen.minBackgroundMinutes * 60e3, SESSION_TIMEOUT_MS)) return false;
+    // Away long enough for a new session (30 min): count it. Shorter (10 to 30 min): same session,
+    // but still eligible for an app-open ad.
+    if (away >= SESSION_TIMEOUT_MS) {
+      const s = startSession(this.state.counters, now, this.cfg.policy.lapsedDays);
+      this.session = s.session;
+      this.setCounters(s.counters);
+      if (this.timing) this.setTiming(timing.startSession(this.timing, this.deps.random));
+      void this.refreshRemote();
+    }
     const entry = now - this.entry.at < 5000 ? this.entry.kind : 'launcher';
     const d = decideAppOpen(this.cfg, this.state.counters, this.session, { ...this.ctx(), entry, backgroundMs: away });
     if (!d.ok) {
@@ -523,7 +529,6 @@ export class AdsManager {
         if (done) return;
         done = true;
         this.adShowing = false;
-        this.adClosedAt = this.deps.now();
         clearTimeout(watchdog);
         s.showing = null;
         ad.destroy();
