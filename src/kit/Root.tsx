@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, type ReactNode } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AdsProvider } from './ads';
+import { AllAccessOffer } from './AllAccessOffer';
 import { initAnalytics } from './analytics';
 import { Billing, testClient, type TestControls } from './billing';
 import { revenueCatClient, revenueCatKey } from './billing.revenuecat';
@@ -35,18 +36,20 @@ export function billingFor(app: string): { billing: Billing; test: TestControls 
   return shared;
 }
 
-export function KitRoot({ brand, children }: { brand: Brand; children: ReactNode }) {
+/** `onSignIn` opens KC account sign-in once accounts exist; until then All Access says "coming soon". */
+export function KitRoot({ brand, children, onSignIn }: { brand: Brand; children: ReactNode; onSignIn?: () => void }) {
   useEffect(() => initAnalytics(brand.slug), [brand.slug]);
   const { billing, test } = billingFor(brand.slug);
   return (
     <SafeAreaProvider>
-      <PremiumProvider app={brand.slug} appName={brand.name} billing={billing} test={test}>
+      <PremiumProvider app={brand.slug} appName={brand.name} billing={billing} test={test} onSignIn={onSignIn}>
         <ThemeProvider brand={brand}>
           <FeedbackProvider>
             <AdsProvider app={brand.slug}>
               <CelebrateProvider app={brand.slug}>
                 <Bar />
                 {children}
+                <AllAccessOffer />
               </CelebrateProvider>
             </AdsProvider>
           </FeedbackProvider>

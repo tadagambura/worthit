@@ -18,7 +18,6 @@ const TIER_LABEL: Record<Tier, string> = {
   premium: 'Premium',
   all_access: 'KC All Access',
   arcade: 'KC Arcade',
-  arcade_subscription: 'All Access game',
 };
 
 export function tierLabel(t: Tier): string {

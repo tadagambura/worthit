@@ -3,8 +3,8 @@
 // The shared billing service. Apps never talk to RevenueCat directly: they use <PremiumProvider>
 // (premium.tsx), which uses a Billing instance from here. The SDK lives behind BillingClient so
 // the rules can be tested without a store, and so web and dev builds get an honest test client.
-import { EMPTY_SNAPSHOT, type EntitlementRecord, type Snapshot } from './entitlements';
-import { ENT, PRICES, fallbackPrice, type BillingPeriod, type ProductLine } from './plans';
+import { EMPTY_SNAPSHOT, type Access, type EntitlementRecord, type Snapshot } from './entitlements';
+import { ENT, OFFERING, PACKAGE, PRICES, entitlementsForLine, fallbackPrice, gameKey, gamePackage, type BillingPeriod, type ProductLine } from './plans';
 import { kv } from './storage';
 
 export type BillingMode = 'live' | 'test' | 'unavailable';
@@ -21,6 +21,8 @@ export type Product = {
   title: string;
   offeringId: string;
   packageId: string;
+  /** For `line: 'game'`: which game (its gameKey). */
+  gameId?: string;
   /** The SDK's own package object; only the client that produced it reads this. */
   raw?: unknown;
 };
@@ -33,7 +35,8 @@ export interface BillingClient {
   mode: BillingMode;
   init(): Promise<void>;
   snapshot(): Promise<Snapshot>;
-  products(app: string): Promise<Product[]>;
+  /** `games` are this app's paid Arcade game ids (the test store needs them; live reads offerings). */
+  products(app: string, games: readonly string[]): Promise<Product[]>;
   /** `replacing` is the store product ID of a subscription this purchase upgrades (Android proration). */
   purchase(p: Product, opts: { replacing?: string }): Promise<Snapshot>;
   restore(): Promise<Snapshot>;
@@ -130,9 +133,9 @@ export class Billing {
     return this.last;
   }
 
-  async getProducts(app: string): Promise<Product[]> {
+  async getProducts(app: string, games: readonly string[] = []): Promise<Product[]> {
     await this.init();
-    return this.client.products(app);
+    return this.client.products(app, games);
   }
 
   purchase(p: Product, opts: { replacing?: string } = {}): Promise<PurchaseResult> {
@@ -198,9 +201,27 @@ export class Billing {
 }
 
 function successMessage(p: Product): string {
-  if (p.line === 'arcade') return 'KC Arcade is yours, forever. Have fun!';
-  if (p.line === 'all_access') return 'KC All Access is on. Every app, every game. Thank you!';
-  return 'Premium is on. Thank you for supporting a small independent studio!';
+  if (p.line === 'game') return 'That game is yours to keep. Have fun!';
+  if (p.line === 'arcade') return 'Every game in every KC app is yours, forever.';
+  if (p.line === 'all_access') return 'KC All Access is on: Premium in every app, and every game is yours. Thank you!';
+  return 'Premium is on, with every game in the Arcade. Thank you for supporting a small independent studio!';
+}
+
+// ---------- KC All Access: two store purchases, in a safe order ----------
+
+/**
+ * The stores can't put a one-off fee on a subscription, so All Access is the £25 every-game
+ * pass plus the subscription. The pass goes first: if the person stops halfway they still
+ * got what they paid for (every game, forever), and nobody gets the subscription's Premium
+ * without the £25. Someone who already owns the pass (for example after cancelling) only
+ * pays the subscription. Returns the purchases still needed, in order.
+ */
+export function allAccessSteps(access: Access, products: readonly Product[], period: 'monthly' | 'annual'): Product[] {
+  if (access.allAccess) return [];
+  const pass = products.find((p) => p.line === 'arcade');
+  const sub = products.find((p) => p.line === 'all_access' && p.period === period);
+  if (!sub || (!access.arcadePermanent && !pass)) return [];
+  return access.arcadePermanent ? [sub] : [pass!, sub];
 }
 
 // ---------- the test client (dev builds and web) ----------
@@ -214,7 +235,9 @@ const DAY = 86_400_000;
  */
 export function testClient(app: string, enabled: boolean, now: () => number = Date.now): BillingClient & { controls: TestControls } {
   const key = 'kc.billing.test';
+  const userKey = 'kc.billing.test.user';
   const listeners = new Set<(s: Snapshot) => void>();
+  const signedInAs = (): string | null => kv.get(userKey);
   const read = (): Record<string, EntitlementRecord> => {
     try {
       return JSON.parse(kv.get(key) ?? '{}');
@@ -231,7 +254,8 @@ export function testClient(app: string, enabled: boolean, now: () => number = Da
     const ents = read();
     const t = now();
     for (const e of Object.values(ents)) e.isActive = !e.expiresAt || new Date(e.expiresAt).getTime() > t;
-    return { entitlements: ents, source: 'test', fetchedAt: new Date(t).toISOString(), managementUrl: null, appUserId: 'test-user', isAnonymous: true };
+    const user = signedInAs();
+    return { entitlements: ents, source: 'test', fetchedAt: new Date(t).toISOString(), managementUrl: null, appUserId: user ?? 'test-anonymous', isAnonymous: user == null };
   };
   let nextFailure: string | null = null;
 
@@ -266,11 +290,22 @@ export function testClient(app: string, enabled: boolean, now: () => number = Da
       }
       write(ents);
     },
-    reset: () => write({}),
+    reset: () => {
+      kv.remove(userKey);
+      write({});
+    },
     grant: (entitlement, period) => grant([entitlement], period, `test.${entitlement}`),
+    signIn: (id = 'test-kc-account') => {
+      kv.set(userKey, id);
+      write(read());
+    },
+    signOut: () => {
+      kv.remove(userKey);
+      write(read());
+    },
   };
 
-  const products = (a: string): Product[] => {
+  const products = (a: string, games: readonly string[]): Product[] => {
     const lines: [ProductLine, BillingPeriod][] = [
       ['app_premium', 'monthly'],
       ['app_premium', 'annual'],
@@ -278,17 +313,32 @@ export function testClient(app: string, enabled: boolean, now: () => number = Da
       ['all_access', 'annual'],
       ['arcade', 'lifetime'],
     ];
-    return lines.map(([line, period]) => ({
-      line,
-      period,
-      priceString: fallbackPrice(line, period)!,
-      priceMinor: PRICES[line][period]!,
-      currency: 'GBP',
-      title: `${line} ${period}`,
-      offeringId: line === 'app_premium' ? `${a}_premium` : line === 'all_access' ? 'kc_all_access' : 'kc_arcade',
-      packageId: `$rc_${period}`,
-      raw: { productId: `test.${a}.${line}.${period}` },
-    }));
+    const offering = (line: ProductLine) => (line === 'app_premium' ? OFFERING.appPremium(a) : line === 'all_access' ? OFFERING.allAccess : OFFERING.arcade);
+    return [
+      ...lines.map(([line, period]) => ({
+        line,
+        period,
+        priceString: fallbackPrice(line, period)!,
+        priceMinor: PRICES[line][period]!,
+        currency: 'GBP',
+        title: `${line} ${period}`,
+        offeringId: offering(line),
+        packageId: PACKAGE[period],
+        raw: { productId: `test.${a}.${line}.${period}` },
+      })),
+      ...games.map((id) => ({
+        line: 'game' as const,
+        period: 'lifetime' as const,
+        priceString: fallbackPrice('game', 'lifetime')!,
+        priceMinor: PRICES.game.lifetime!,
+        currency: 'GBP',
+        title: id,
+        offeringId: OFFERING.games(a),
+        packageId: gamePackage(id),
+        gameId: gameKey(id),
+        raw: { productId: `test.${a}.game.${gameKey(id)}` },
+      })),
+    ];
   };
 
   return {
@@ -296,7 +346,7 @@ export function testClient(app: string, enabled: boolean, now: () => number = Da
     controls,
     init: async () => undefined,
     snapshot: async () => (enabled ? snap() : EMPTY_SNAPSHOT),
-    products: async (a) => (enabled ? products(a) : []),
+    products: async (a, games) => (enabled ? products(a, games) : []),
     purchase: async (p) => {
       if (!enabled) throw { code: RC.config, message: 'unavailable' };
       if (nextFailure) {
@@ -305,8 +355,7 @@ export function testClient(app: string, enabled: boolean, now: () => number = Da
         throw { code, message: 'simulated', userCancelled: code === RC.cancelled };
       }
       const productId = (p.raw as { productId?: string } | undefined)?.productId ?? 'test';
-      const ids = p.line === 'app_premium' ? [ENT.appPremium(app)] : p.line === 'all_access' ? [ENT.allAccess, ENT.arcadeSubscription] : [ENT.arcadePermanent];
-      grant(ids, p.period, productId);
+      grant(entitlementsForLine(app, p.line, p.gameId), p.period, productId);
       if (p.line === 'all_access') {
         // Like the real stores: the app's own Premium is replaced by the upgrade, not billed alongside it.
         const ents = read();
@@ -320,8 +369,14 @@ export function testClient(app: string, enabled: boolean, now: () => number = Da
       return snap();
     },
     restore: async () => (enabled ? snap() : EMPTY_SNAPSHOT),
-    logIn: async () => snap(),
-    logOut: async () => snap(),
+    logIn: async (id) => {
+      kv.set(userKey, id);
+      return snap();
+    },
+    logOut: async () => {
+      kv.remove(userKey);
+      return snap();
+    },
     subscribe: (cb) => {
       listeners.add(cb);
       return () => listeners.delete(cb);
@@ -337,4 +392,7 @@ export type TestControls = {
   cancelRenewals: () => void;
   reset: () => void;
   grant: (entitlement: string, period: BillingPeriod) => void;
+  /** Pretend the person signed in to a KC account (All Access needs one). */
+  signIn: (id?: string) => void;
+  signOut: () => void;
 };

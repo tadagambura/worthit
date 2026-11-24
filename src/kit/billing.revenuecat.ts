@@ -13,7 +13,7 @@ import Purchases, {
 } from 'react-native-purchases';
 import type { BillingClient, Product } from './billing';
 import type { EntitlementRecord, Snapshot, Verification } from './entitlements';
-import { OFFERING, PACKAGE, type BillingPeriod, type ProductLine } from './plans';
+import { gameOfPackage, OFFERING, PACKAGE, type BillingPeriod, type ProductLine } from './plans';
 
 function verification(v: string | undefined): Verification {
   if (v === 'VERIFIED') return 'verified';
@@ -60,11 +60,14 @@ function productsFrom(offering: PurchasesOffering | undefined, line: ProductLine
   if (!offering) return [];
   return offering.availablePackages
     .map((pkg: PurchasesPackage): Product | null => {
-      const period = PERIOD_BY_PACKAGE[pkg.identifier];
+      // Games are custom packages named game_<key>, one per game, all bought once.
+      const gameId = line === 'game' ? gameOfPackage(pkg.identifier) : null;
+      const period = line === 'game' ? (gameId ? 'lifetime' : undefined) : PERIOD_BY_PACKAGE[pkg.identifier];
       if (!period) return null;
       return {
         line,
         period,
+        ...(gameId ? { gameId } : {}),
         priceString: pkg.product.priceString,
         priceMinor: Number.isFinite(pkg.product.price) ? Math.round(pkg.product.price * 100) : null,
         currency: pkg.product.currencyCode,
@@ -118,6 +121,7 @@ export function revenueCatClient(apiKey: string, isDev: boolean): BillingClient 
         ...productsFrom(all[OFFERING.appPremium(app)], 'app_premium'),
         ...productsFrom(all[OFFERING.allAccess], 'all_access'),
         ...productsFrom(all[OFFERING.arcade], 'arcade'),
+        ...productsFrom(all[OFFERING.games(app)], 'game'),
       ];
     },
     purchase: async (p, opts) => {
