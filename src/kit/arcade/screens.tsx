@@ -5,6 +5,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { useFeedback } from '../feedback';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useRewardedAd } from '../ads';
 import { todayKey } from '../dates';
@@ -14,12 +15,14 @@ import { PaywallSheet } from '../Paywall';
 import { usePremium } from '../premium';
 import { useTheme } from '../theme';
 import { Body, Button, Card, H1, Muted, Note, Row, Screen, Section, Stack, Strong } from '../ui';
+import { DownloadsCard } from './downloads';
 import { dailyGame } from './engine';
+import { claimsLeft, gemsStore, GEMS } from './gems';
 import { loadPack, packState } from './packs';
 import { GameShell } from './Shell';
 import { arcade } from './registry';
 import type { GameMeta, Pack } from './types';
-import { DAILY_BONUS, walletStore } from './wallet';
+import { walletStore } from './wallet';
 
 // The registry lives in ./registry (no UI imports) so billing can read the game list too.
 export { arcade, registerArcade } from './registry';
@@ -37,7 +40,7 @@ function kb(bytes: number) {
 
 export function ArcadeHome() {
   const { c, radius } = useTheme();
-  const { canPlay, products, loadProducts } = usePremium();
+  const { canPlay, products, loadProducts, isPremium } = usePremium();
   const reg = arcade();
   const useWallet = walletStore(reg?.catalog.app ?? 'none');
   const wallet = useWallet();
@@ -48,6 +51,15 @@ export function ArcadeHome() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
+  const { toast } = useFeedback();
+  const useGems = gemsStore(reg?.catalog.app ?? 'none');
+  const gemState = useGems();
+  const freeGemsLeft = claimsLeft(gemState);
+  useEffect(() => {
+    // A small welcome gift the first time, so revives are discoverable.
+    const n = useGems.getState().welcome();
+    if (n) toast(`Welcome to the arcade! Here are ${n} 💎 to get you started.`);
+  }, [useGems, toast]);
   if (!reg) return <Screen><Body>The arcade isn't set up in this app yet.</Body></Screen>;
   const { catalog, bundled } = reg;
   const daily = dailyGame(catalog, todayKey(), canPlay);
@@ -66,7 +78,10 @@ export function ArcadeHome() {
         <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" hitSlop={12}>
           <Ionicons name="chevron-back" size={26} color={c.text} />
         </Pressable>
-        <Strong testID="arcade-balance">{`${wallet.balance} ${catalog.currency.emoji}`}</Strong>
+        <Row gap={12}>
+          <Strong testID="arcade-gems">{`${gemState.gems} 💎`}</Strong>
+          <Strong testID="arcade-balance">{`${wallet.balance} ${catalog.currency.emoji}`}</Strong>
+        </Row>
       </Row>
       <H1>{`${catalog.emoji} ${catalog.title}`}</H1>
       <Muted>{`Quick games, 30 to 60 seconds each. Win ${catalog.currency.name.toLowerCase()} as you play; soon you can swap them for ${catalog.unlocks}.`}</Muted>
@@ -78,27 +93,47 @@ export function ArcadeHome() {
         </Card>
       ) : null}
 
-      {bonus.ready && wallet.bonusDay !== todayKey() ? (
+      {freeGemsLeft > 0 && (isPremium || bonus.ready) ? (
         <Card
           testID="arcade-bonus"
-          accessibilityLabel={`Daily bonus: ${DAILY_BONUS} ${catalog.currency.name.toLowerCase()} for watching a short ad. Optional.`}
+          accessibilityLabel={isPremium ? `Claim ${GEMS.perReward} gems` : `Free gems: ${GEMS.perReward} gems for watching a short ad. Optional.`}
           onPress={async () => {
             if (claiming) return;
             setClaiming(true);
-            const r = await bonus.show();
-            if (r.earned) useWallet.getState().claimDailyBonus(DAILY_BONUS);
+            const ok = isPremium || (await bonus.show()).earned;
+            if (ok && useGems.getState().claim()) toast(`+${GEMS.perReward} 💎`);
             setClaiming(false);
           }}
         >
           <Row gap={12}>
-            <Text style={{ fontSize: 28 }}>🎁</Text>
+            <Text style={{ fontSize: 28 }}>💎</Text>
             <View style={{ flex: 1 }}>
-              <Strong>{`Daily bonus: +${DAILY_BONUS} ${catalog.currency.emoji}`}</Strong>
-              <Muted>Watch a short ad to claim it. Optional, once a day.</Muted>
+              <Strong>{`Free gems: +${GEMS.perReward} 💎`}</Strong>
+              <Muted>{isPremium ? `Subscriber bonus, no ads. ${freeGemsLeft} left today.` : `Watch a short ad to claim. Optional. ${freeGemsLeft} left today.`}</Muted>
             </View>
           </Row>
         </Card>
       ) : null}
+
+      <Card testID="arcade-swap">
+        <Strong>{`Swap gems for ${catalog.currency.name.toLowerCase()}`}</Strong>
+        <Muted>{`1 💎 = ${GEMS.exchangeRate} ${catalog.currency.emoji}. Gems also buy revives (${GEMS.reviveCost} 💎).`}</Muted>
+        <Row gap={8}>
+          {[1, 5].map((n) => (
+            <Button
+              key={n}
+              small
+              variant="secondary"
+              title={`${n} 💎 → ${n * GEMS.exchangeRate} ${catalog.currency.emoji}`}
+              disabled={gemState.gems < n}
+              testID={`swap-${n}`}
+              onPress={() => {
+                if (useGems.getState().exchange(n)) toast(`Swapped ${n} 💎 for ${n * GEMS.exchangeRate} ${catalog.currency.emoji}`);
+              }}
+            />
+          ))}
+        </Row>
+      </Card>
 
       <Section title="Games">
         <Stack gap={10}>
@@ -134,7 +169,8 @@ export function ArcadeHome() {
           })}
         </Stack>
       </Section>
-      <Muted center>{"No lives, no streaks to break, nothing to lose. Games only download when you first play them."}</Muted>
+      <DownloadsCard catalog={catalog} bundled={bundled} />
+      <Muted center>{"No lives, no streaks to break, nothing to lose. Games download inside the app when you first play them."}</Muted>
       <PaywallSheet
         visible={!!paywall}
         onClose={() => setPaywall(null)}

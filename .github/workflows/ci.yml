@@ -38,6 +38,6 @@ jobs:
         env:
           EXPO_PUBLIC_TEST_MODE: '1'
       - name: Journey tests (Chrome, phone viewport)
-        run: npx playwright test e2e/journey.spec.ts e2e/arcade.spec.ts
+        run: npx playwright test e2e/journey.spec.ts e2e/arcade.spec.ts e2e/gems.spec.ts
         env:
           CI: '1'

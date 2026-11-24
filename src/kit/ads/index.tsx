@@ -64,7 +64,7 @@ export function AdsProvider({ app, children }: { app: string; children: ReactNod
   const usePrefs = prefsStore(app);
   const onboarded = usePrefs((s) => s.onboarded);
   const [installed, setInstalled] = useState<ReadonlySet<string>>(new Set());
-  useSyncExternalStore(m.subscribe, m.getVersion, m.getVersion);
+  const live = useAdsValue(m, (x) => x.cfg.live, {});
 
   useEffect(() => {
     if (ready) m.setPremium(isPremium);
@@ -92,7 +92,7 @@ export function AdsProvider({ app, children }: { app: string; children: ReactNod
   }, [m]);
 
   // Which live KC apps are already on this phone, so cross-promotion skips them.
-  const liveKey = Object.keys(m.cfg.live).sort().join(',');
+  const liveKey = Object.keys(live).sort().join(',');
   useEffect(() => {
     if (PLATFORM === 'web' || !liveKey) return;
     let alive = true;
@@ -112,14 +112,21 @@ export function AdsProvider({ app, children }: { app: string; children: ReactNod
   );
 }
 
-/** The ads manager, re-rendering when its state changes. Null outside <AdsProvider>. */
+/** The ads manager. Null outside <AdsProvider>. Read live values with useAdsValue, never m.x() in render. */
 export function useAds(): AdsManager | null {
-  const m = useContext(Ctx);
-  useSyncExternalStore(m?.subscribe ?? noopSub, m?.getVersion ?? zero, m?.getVersion ?? zero);
-  return m;
+  return useContext(Ctx);
 }
 const noopSub = () => () => {};
-const zero = () => 0;
+
+/**
+ * A live value from the manager, as a store snapshot. The manager is a mutable object, so
+ * reading it during render (m.rewardedReady(…)) gets memoised by the React Compiler and goes
+ * stale. Snapshots must be primitives or stable references.
+ */
+export function useAdsValue<T>(m: AdsManager | null, read: (m: AdsManager) => T, fallback: T): T {
+  const get = () => (m ? read(m) : fallback);
+  return useSyncExternalStore(m?.subscribe ?? noopSub, get, get);
+}
 
 /**
  * Returns a function to call at a natural break: a finished round, deck or quiz, never in the
@@ -133,12 +140,13 @@ export function useAdBreak() {
 /** An opt-in rewarded ad. Show the offer only while `ready`; `show()` resolves with whether the reward was earned. */
 export function useRewardedAd(placement: string) {
   const m = useAds();
-  const allowed = !!m && m.rewardedAllowed(placement);
+  const allowed = useAdsValue(m, (x) => x.rewardedAllowed(placement), false);
+  const ready = useAdsValue(m, (x) => x.rewardedReady(placement), false);
   useEffect(() => {
     if (m && allowed) m.prepare(placement);
-  }, [m, allowed, placement, m?.started]);
+  }, [m, allowed, placement]);
   const show = useCallback(async () => (m ? m.showRewarded(placement) : { earned: false }), [m, placement]);
-  return { ready: !!m && m.rewardedReady(placement), allowed, show };
+  return { ready, allowed, show };
 }
 
 // ---------- house ads (KC cross-promotion and Premium) ----------
@@ -156,7 +164,8 @@ function HouseStrip({ app, placement, height, seed }: { app: string; placement: 
   const m = useContext(Ctx);
   const installed = useContext(Installed);
   const [paywall, setPaywall] = useState(false);
-  const pick = m && PLATFORM !== 'web' ? pickHouseApp(app, m.cfg.live, installed, seed, PLATFORM) : null;
+  const live = useAdsValue(m, (x) => x.cfg.live, {});
+  const pick = PLATFORM !== 'web' ? pickHouseApp(app, live, installed, seed, PLATFORM) : null;
   useEffect(() => {
     if (pick) track('house_ad_impression', { target: pick.slug, placement });
   }, [pick?.slug, placement]);
@@ -214,6 +223,8 @@ const RESERVED = 60;
  */
 export function AdBanner({ placement }: { placement: string }) {
   const m = useAds();
+  const slot = useAdsValue(m, (x) => x.inlineSlot(placement), false);
+  const liveUnit = useAdsValue(m, (x) => x.inlineUnit(placement), null);
   const { c, brand } = useTheme();
   const [height, setHeight] = useState(RESERVED);
   const [loaded, setLoaded] = useState(false);
@@ -234,11 +245,11 @@ export function AdBanner({ placement }: { placement: string }) {
     [m, placement, attempt],
   );
 
-  if (!m || !m.inlineSlot(placement)) return null;
+  if (!m || !slot) return null;
   if (!viewsSupported) {
     return PREVIEW ? <View style={[styles.preview, { height: RESERVED, borderColor: c.border }]}><Text style={{ color: c.textMuted }}>{`Ad · ${placement}`}</Text></View> : null;
   }
-  const unit = gaveUp ? null : m.inlineUnit(placement);
+  const unit = gaveUp ? null : liveUnit;
   return (
     <View style={{ height: height + 10, paddingVertical: 5, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, backgroundColor: c.bg, alignItems: 'center' }} testID={`ad-${placement}`}>
       {unit ? <SdkBanner key={attempt} unitId={unit} npa={m.npa} onEvent={onEvent} onHeight={(h) => h > 0 && setHeight(h)} /> : null}
@@ -256,6 +267,7 @@ export function AdBanner({ placement }: { placement: string }) {
 /** A native ad card for lists. Labelled "Ad", visually set apart, at most one per screen. Renders nothing until filled. */
 export function NativeAdCard({ placement }: { placement: string }) {
   const m = useAds();
+  const unit = useAdsValue(m, (x) => x.inlineUnit(placement), null);
   const [failed, setFailed] = useState(false);
   const onEvent = useCallback(
     (e: SdkEvent) => {
@@ -264,9 +276,7 @@ export function NativeAdCard({ placement }: { placement: string }) {
     },
     [m, placement],
   );
-  if (!m || !viewsSupported || failed) return null;
-  const unit = m.inlineUnit(placement);
-  if (!unit) return null;
+  if (!m || !viewsSupported || failed || !unit) return null;
   return <SdkNative unitId={unit} npa={m.npa} onEvent={onEvent} />;
 }
 
@@ -276,14 +286,17 @@ export function NativeAdCard({ placement }: { placement: string }) {
 export function useAdSettings() {
   const m = useAds();
   const { isPremium } = usePremium();
+  const hasPlacements = useAdsValue(m, (x) => Object.keys(x.cfg.placements).length > 0, false);
+  const privacyRequired = useAdsValue(m, (x) => x.consent.privacyOptionsRequired, false);
+  const version = useAdsValue(m, (x) => x.getVersion(), 0);
   // Web never loads ads, so there's nothing to choose, report or remove there.
-  if (!m || !sdk.supported || !Object.keys(m.cfg.placements).length) return null;
+  if (!m || !sdk.supported || !hasPlacements) return null;
   return {
     showAdsRow: !isPremium,
-    privacyRequired: m.consent.privacyOptionsRequired,
+    privacyRequired,
     showPrivacyOptions: () => m.showPrivacyOptions(),
     inspector: TEST_MODE && sdk.supported ? () => m.openInspector() : null,
-    debug: TEST_MODE ? m.debug() : null,
+    debug: TEST_MODE ? m.debug(version) : null,
   };
 }
 

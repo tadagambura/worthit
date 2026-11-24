@@ -9,7 +9,7 @@
 // - The ATT purpose string, only for apps allowed to ask (never family apps).
 // - URL-scheme queries so cross-promotion can skip KC apps already installed.
 // - Family apps: the Android advertising-id permission is removed.
-// - Android release builds: Google's UMP keep rule, so R8 doesn't strip the consent SDK.
+// - Android release builds: R8 keep rules for the UMP consent SDK and WorkManager's database.
 const fs = require('fs');
 const path = require('path');
 const { withAndroidManifest, withDangerousMod } = require('expo/config-plugins');
@@ -34,7 +34,14 @@ const KC_SCHEMES = [
 ];
 
 const AD_ID = 'com.google.android.gms.permission.AD_ID';
-const UMP_KEEP = '-keep class com.google.android.gms.internal.consent_sdk.** { *; }';
+// R8 rules for Android release builds (minified, R8 full mode).
+const R8_RULES = [
+  ['Google UMP consent SDK', '-keep class com.google.android.gms.internal.consent_sdk.** { *; }'],
+  // Google Mobile Ads pulls in WorkManager 2.7, whose Room database is built by reflection. Its own
+  // rule keeps the class but not the constructor under full mode, so release builds crashed at
+  // launch ("Failed to create an instance of androidx.work.impl.WorkDatabase").
+  ['WorkManager Room database (from Google Mobile Ads)', '-keep class * extends androidx.room.RoomDatabase { <init>(); }'],
+];
 
 const TRACKING_TEXT =
   'Allowing this lets us show ads that are more relevant to you, which keeps the free version free. You can say no and still use everything.';
@@ -97,8 +104,12 @@ function withKcAds(config, { tracking = true, family = false } = {}) {
     'android',
     async (c) => {
       const file = path.join(c.modRequest.platformProjectRoot, 'app', 'proguard-rules.pro');
-      const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-      if (!text.includes(UMP_KEEP)) fs.writeFileSync(file, `${text}${text.endsWith('\n') || !text ? '' : '\n'}\n# KC Ads: Google UMP consent SDK\n${UMP_KEEP}\n`);
+      let text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+      for (const [why, rule] of R8_RULES) {
+        if (text.includes(rule)) continue;
+        text = `${text}${text.endsWith('\n') || !text ? '' : '\n'}\n# KC Ads: ${why}\n${rule}\n`;
+      }
+      fs.writeFileSync(file, text);
       return c;
     },
   ]);
