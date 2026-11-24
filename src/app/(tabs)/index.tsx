@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Text } from 'react-native';
+import { AdBanner } from '@/kit/ads';
 import { PaywallSheet } from '@/kit/Paywall';
 import { usePremium } from '@/kit/premium';
 import { Button, Card, EmptyState, H1, Muted, Row, Screen, Section, Stack, Strong } from '@/kit/ui';
@@ -19,7 +20,7 @@ export default function People() {
   const add = () => (!isPremium && active.length >= FREE_PEOPLE ? setPaywall(true) : router.push('/person/new'));
 
   return (
-    <Screen testID="ranking">
+    <Screen testID="ranking" banner={<AdBanner placement="people_banner" />}>
       <Stack gap={2}>
         <H1>WorthIt?</H1>
         <Muted>Get out of your head. Look at the pattern.</Muted>
