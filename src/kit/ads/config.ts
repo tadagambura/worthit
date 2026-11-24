@@ -10,22 +10,26 @@ import type { AdPolicy, AppAds, DeepPartial, Experiment, Placement, RemoteAdsCon
 export const REMOTE_CONFIG_URL = 'https://kaoticchainz.com/ads/config.json';
 
 /**
- * Portfolio defaults. Ambitious but retention-first:
- * - Full-screen ads only from the 3rd session and a day after install, so people get value first.
- * - Every 3 minutes at most, 3 a session, 8 a day.
- * - Rewarded ads are opt-in and lightly capped.
+ * Portfolio defaults. Revenue-first (owner, 24 Nov 2026: "KC is reliant heavily on revenue:
+ * ad on open, ad between games"), still inside SAFE_BOUNDS:
+ * - Full-screen ads from the 2nd session, never in someone's very first session.
+ * - At least 90 seconds apart, at most 5 a session and 15 a day.
+ * - App-open ads on in every app except the family apps and Granny's Vault.
+ * Most values sit at the edge of SAFE_BOUNDS, so remote config can only make ads lighter.
+ * - Rewarded ads are opt-in, pay gems only, and are lightly capped.
+ * The timing model (timing.ts) then picks the best of the allowed moments for each person.
  */
 export const DEFAULT_POLICY: AdPolicy = {
-  minSessionsForFullscreen: 3,
-  minInstallHoursForFullscreen: 24,
-  sessionGraceSeconds: 45,
-  interstitialGapSeconds: 180,
-  maxFullscreenPerSession: 3,
-  maxFullscreenPerDay: 8,
+  minSessionsForFullscreen: 2,
+  minInstallHoursForFullscreen: 0,
+  sessionGraceSeconds: 30,
+  interstitialGapSeconds: 90,
+  maxFullscreenPerSession: 5,
+  maxFullscreenPerDay: 15,
   rewardedCooldownSeconds: 120,
   maxRewardedPerDay: 12,
   lapsedDays: 7,
-  appOpen: { minInstallDays: 3, minSessions: 5, minBackgroundMinutes: 30, maxPerDay: 1, gapAfterFullscreenSeconds: 600 },
+  appOpen: { minInstallDays: 1, minSessions: 3, minBackgroundMinutes: 10, maxPerDay: 2, gapAfterFullscreenSeconds: 180 },
   loadTimeoutSeconds: 8,
   maxRetries: 3,
 };
@@ -57,20 +61,24 @@ export const SAFE_BOUNDS = {
 // ---------- placements shared by every app (wired inside the kit) ----------
 
 /**
- * Arcade: an interstitial between rounds, plus opt-in rewarded ads: "double your coins",
- * a once-a-day bonus, and a revive (continue a round once, never offered after a rigged loss:
- * KC games never change difficulty to sell a revive).
+ * Arcade: an interstitial between games (every game, subject to the gap and caps), plus opt-in
+ * rewarded ads that pay gems (a once-a-day bonus and "+5 gems") and a revive (continue a round
+ * once, never offered after a rigged loss: KC games never change difficulty to sell a revive).
  */
 const ARCADE: Record<string, Placement> = {
-  arcade_break: { format: 'interstitial', enabled: true, everyNth: 2 },
+  arcade_break: { format: 'interstitial', enabled: true, everyNth: 1 },
   arcade_double: { format: 'rewarded', enabled: true, dailyCap: 5 },
   arcade_daily: { format: 'rewarded', enabled: true, dailyCap: 1 },
   arcade_revive: { format: 'rewarded', enabled: true, dailyCap: 5 },
 };
 /** One native ad in the learning-card library, clearly labelled. */
 const LEARN: Record<string, Placement> = { learn_native: { format: 'native', enabled: true } };
-/** Declared but off: switched on per app by an experiment, so its retention cost gets measured. */
-const APP_OPEN_OFF: Record<string, Placement> = { app_open: { format: 'app_open', enabled: false } };
+/**
+ * An ad when the app opens from the launcher (cold launch or back after a while).
+ * Not in family apps (KidQuest, Reset) and not in Granny's Vault: a full-screen ad over a
+ * password app's unlock screen looks like a phishing overlay.
+ */
+const APP_OPEN: Record<string, Placement> = { app_open: { format: 'app_open', enabled: true } };
 
 const banner = (...ids: string[]): Record<string, Placement> => Object.fromEntries(ids.map((id) => [id, { format: 'banner', enabled: true } as Placement]));
 const brk = (id: string, everyNth = 1): Record<string, Placement> => ({ [id]: { format: 'interstitial', enabled: true, everyNth } });
@@ -81,22 +89,22 @@ const brk = (id: string, everyNth = 1): Record<string, Placement> => ({ [id]: { 
  */
 export const APP_ADS: Record<string, AppAds> = {
   // Banner only on the app's own screens: never on safe-to-spend, deposits or lessons.
-  stackup: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('stacks_banner'), ...ARCADE } },
+  stackup: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('stacks_banner'), ...ARCADE, ...APP_OPEN } },
   // Banner on the stats screen only.
-  loopday: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('stats_banner'), ...LEARN, ...ARCADE } },
+  loopday: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('stats_banner'), ...LEARN, ...ARCADE, ...APP_OPEN } },
   // Light: stock and sold lists, never on item forms.
-  flipped: { enabled: true, audience: 'adult', maxRating: 'T', npaOnly: false, tracking: true, placements: { ...banner('stock_banner', 'sold_banner'), ...LEARN, ...ARCADE } },
+  flipped: { enabled: true, audience: 'adult', maxRating: 'T', npaOnly: false, tracking: true, placements: { ...banner('stock_banner', 'sold_banner'), ...LEARN, ...ARCADE, ...APP_OPEN } },
   // Leisure sessions: the best inventory in the portfolio. Breaks at the end of a deck and a quiz.
-  afterhours: { enabled: true, audience: 'adult', maxRating: 'T', npaOnly: false, tracking: true, placements: { ...banner('decks_banner'), ...brk('deck_break', 1), ...brk('quiz_break', 1), ...ARCADE, ...APP_OPEN_OFF } },
+  afterhours: { enabled: true, audience: 'adult', maxRating: 'T', npaOnly: false, tracking: true, placements: { ...banner('decks_banner'), ...brk('deck_break', 1), ...brk('quiz_break', 1), ...ARCADE, ...APP_OPEN } },
   // Light, never on pay screens or shift forms.
-  shiftledger: { enabled: true, audience: 'adult', maxRating: 'T', npaOnly: false, tracking: true, placements: { ...banner('shifts_banner', 'rights_banner'), ...ARCADE } },
+  shiftledger: { enabled: true, audience: 'adult', maxRating: 'T', npaOnly: false, tracking: true, placements: { ...banner('shifts_banner', 'rights_banner'), ...ARCADE, ...APP_OPEN } },
   // Never on the check-in, result or coach screens.
-  worthit: { enabled: true, audience: 'adult', maxRating: 'T', npaOnly: false, tracking: true, placements: { ...banner('people_banner'), ...LEARN, ...ARCADE } },
+  worthit: { enabled: true, audience: 'adult', maxRating: 'T', npaOnly: false, tracking: true, placements: { ...banner('people_banner'), ...LEARN, ...ARCADE, ...APP_OPEN } },
   // For parents, but children may be looking: parent-only screens, child-directed, G, no tracking,
   // nothing full-screen and nothing in the family arcade.
   kidquest: { enabled: true, audience: 'family', maxRating: 'G', npaOnly: true, tracking: false, placements: { ...banner('plan_banner', 'why_banner') } },
   // Never during the plant-revive moment.
-  thirsty: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('plants_banner'), ...LEARN, ...ARCADE, ...APP_OPEN_OFF } },
+  thirsty: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('plants_banner'), ...LEARN, ...ARCADE, ...APP_OPEN } },
   // None in family or kids' areas or on check-ins, and its arcade is a family arcade. The admin
   // calendar is Premium-only, so the free inventory is the chores list. Children in a household
   // may see it: non-personalised, G-rated, no tracking prompt.
@@ -104,16 +112,16 @@ export const APP_ADS: Record<string, AppAds> = {
   // Nothing inside the vault. No tracking prompt in a password app.
   grannysvault: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: false, placements: { ...LEARN, ...ARCADE } },
   // Never on the dump page or Today (the focus list).
-  braindump: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('later_banner'), ...LEARN, ...ARCADE } },
+  braindump: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('later_banner'), ...LEARN, ...ARCADE, ...APP_OPEN } },
 
   // Wave 2 (planned: wire the placements when each app is built).
-  plateweek: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('meals_banner', 'list_banner'), ...LEARN, ...ARCADE } },
-  daymark: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('list_banner'), ...ARCADE } },
-  keepit: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('receipts_banner'), ...LEARN, ...ARCADE } },
+  plateweek: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('meals_banner', 'list_banner'), ...LEARN, ...ARCADE, ...APP_OPEN } },
+  daymark: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('list_banner'), ...ARCADE, ...APP_OPEN } },
+  keepit: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('receipts_banner'), ...LEARN, ...ARCADE, ...APP_OPEN } },
   // A finished focus session is the perfect break; never during one.
-  studysprint: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('plan_banner'), ...brk('focus_break', 1), ...LEARN, ...ARCADE } },
-  pawplan: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('log_banner'), ...LEARN, ...ARCADE } },
-  tripsplit: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('trips_banner'), ...ARCADE } },
+  studysprint: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('plan_banner'), ...brk('focus_break', 1), ...LEARN, ...ARCADE, ...APP_OPEN } },
+  pawplan: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('log_banner'), ...LEARN, ...ARCADE, ...APP_OPEN } },
+  tripsplit: { enabled: true, audience: 'general', maxRating: 'PG', npaOnly: false, tracking: true, placements: { ...banner('trips_banner'), ...ARCADE, ...APP_OPEN } },
 };
 
 /** Apps without an entry get no ads at all. */

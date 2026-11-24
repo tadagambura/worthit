@@ -11,11 +11,18 @@ import { decideAppOpen, decideBreak, decideInline, decideRewarded, freshCounters
 import type { AdSdk, ConsentResult, FullscreenAd, SdkEvent } from './sdk.types';
 import type { AdCounters, AdFormat, AdPolicy, BlockReason, DeepPartial, EntryPoint, FullscreenFormat, RemoteAdsConfig, ResolvedAds, SessionState } from './types';
 import { isFullscreen } from './types';
+import * as timing from './timing';
 import { unitFor } from './units';
 
 /** Full-screen ads go stale: Google says interstitial and rewarded after 1 hour, app open after 4. */
 const EXPIRY_MS: Record<FullscreenFormat, number> = { interstitial: 55 * 60e3, rewarded: 55 * 60e3, rewarded_interstitial: 55 * 60e3, app_open: 3.75 * 3600e3 };
 const REMOTE_MAX_AGE_MS = 6 * 3600e3;
+/** Cold-launch app-open: how long to wait for the ad to finish loading before giving up. */
+const COLD_OPEN_WAIT_MS = 3000;
+/** Cold-launch app-open only right at launch, never once someone is already using the app. */
+const COLD_OPEN_WINDOW_MS = 8000;
+/** After a full-screen ad closes, ignore background events for this long (Android's ad activity). */
+const AD_ACTIVITY_GRACE_MS = 2000;
 /** If a full-screen ad never reports "closed", carry on anyway. */
 const SHOW_WATCHDOG_MS = 3 * 60e3;
 
@@ -47,6 +54,8 @@ export type AdsDeps = {
   debugEEA?: boolean;
   /** Test builds only: loosen the rules to try every placement on a fresh install (still clamped). */
   testPolicy?: DeepPartial<AdPolicy> | null;
+  /** Randomness for the timing model's bandit (inject a seeded one in tests). */
+  random?: () => number;
 };
 
 const QUIET: BlockReason[] = ['premium', 'disabled', 'unknown_placement', 'unsupported'];
@@ -60,6 +69,16 @@ export class AdsManager {
   started = false;
   private starting: Promise<void> | null = null;
   private deps: Required<Omit<AdsDeps, 'units' | 'testDeviceIds' | 'debugEEA' | 'testPolicy'>> & Pick<AdsDeps, 'units' | 'testDeviceIds' | 'debugEEA' | 'testPolicy'>;
+  /** The per-person ad-timing model, or null for people in the timing holdout. */
+  private timing: timing.TimingModel | null = null;
+  /** On a cold launch, how long the app had been unused (0 if unknown). */
+  private coldAway = 0;
+  /**
+   * A full-screen ad is on screen. On Android it runs in its own activity, so React Native
+   * reports the app as "background" while it shows. That must not count as leaving the app.
+   */
+  private adShowing = false;
+  private adClosedAt = 0;
   private state: Persisted;
   private session: SessionState;
   private slots = new Map<string, Slot>();
@@ -75,6 +94,7 @@ export class AdsManager {
     this.app = app;
     this.deps = {
       now: () => Date.now(),
+      random: () => Math.random(),
       fetchRemote: async () => {
         const res = await fetch(REMOTE_CONFIG_URL, { headers: { accept: 'application/json' } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -86,10 +106,41 @@ export class AdsManager {
     this.state = this.load(now);
     const cached = this.cachedRemote();
     this.cfg = this.resolve(cached?.config ?? null);
+    // Real time since the app was last used (saved when it went to the background), for cold-launch app-open.
+    const last = this.state.counters.lastActiveAt;
+    this.coldAway = this.state.counters.sessions > 0 && last > 0 ? Math.max(0, now - last) : 0;
     const s = startSession(this.state.counters, now, this.cfg.policy.lapsedDays);
     this.session = s.session;
     this.save({ ...this.state, counters: s.counters });
+    this.loadTiming();
     this.publishVariants();
+  }
+
+  // ---------- ad-timing model (timing.ts) ----------
+
+  /** People in the timing_v1 holdout get the plain policy, so the model's effect can be measured. */
+  private loadTiming() {
+    if (this.cfg.variants.includes('timing_v1:off')) {
+      this.timing = null;
+      return;
+    }
+    let m = timing.newModel();
+    try {
+      m = timing.parseModel(kv.get(this.key('timing')));
+    } catch {
+      // Unreadable: start fresh.
+    }
+    this.setTiming(timing.startSession(m, this.deps.random));
+  }
+
+  private setTiming(m: timing.TimingModel | null) {
+    this.timing = m;
+    if (!m) return;
+    try {
+      kv.set(this.key('timing'), JSON.stringify(m));
+    } catch {
+      // Storage full or blocked: the model just learns more slowly.
+    }
   }
 
   // ---------- persistence ----------
@@ -199,6 +250,7 @@ export class AdsManager {
       await sdk.initialize({ maxRating: this.cfg.maxRating, childDirected: this.cfg.audience === 'family', underAgeOfConsent: this.cfg.audience === 'family', testDeviceIds });
       this.started = true;
       this.warmUp();
+      void this.coldOpen();
     })()
       .catch(() => {
         // Ads failing to start must never affect the app.
@@ -217,8 +269,12 @@ export class AdsManager {
   /** The app went to the background. */
   onBackground() {
     const now = this.deps.now();
+    // A full-screen ad opening (or just closing) isn't the person leaving.
+    if (this.adShowing || now - this.adClosedAt < AD_ACTIVITY_GRACE_MS) return;
     this.backgroundAt = now;
     this.setCounters({ ...this.state.counters, lastActiveAt: now });
+    // Only teaches the timing model (did they leave right after an ad?). Never shows anything.
+    if (this.timing) this.setTiming(timing.onBackground(this.timing, now));
     this.flushInline();
   }
 
@@ -228,12 +284,15 @@ export class AdsManager {
    */
   async onForeground(): Promise<boolean> {
     const now = this.deps.now();
+    // Coming back from a full-screen ad's own activity: not a new session, and never an app-open ad.
+    if (this.adShowing) return false;
     const away = this.backgroundAt ? now - this.backgroundAt : 0;
     this.backgroundAt = 0;
     if (away < SESSION_TIMEOUT_MS) return false;
     const s = startSession(this.state.counters, now, this.cfg.policy.lapsedDays);
     this.session = s.session;
     this.setCounters(s.counters);
+    if (this.timing) this.setTiming(timing.startSession(this.timing, this.deps.random));
     void this.refreshRemote();
     const entry = now - this.entry.at < 5000 ? this.entry.kind : 'launcher';
     const d = decideAppOpen(this.cfg, this.state.counters, this.session, { ...this.ctx(), entry, backgroundMs: away });
@@ -245,6 +304,37 @@ export class AdsManager {
     const shown = await this.showSlot('app_open', { appOpen: true });
     this.warmUp();
     return shown;
+  }
+
+  /**
+   * Cold launch from the launcher: an app-open ad if the rules allow, using the real time since
+   * the app was last used. Waits briefly for the ad to load, and only right at launch, never
+   * once someone is already using the app. Counts towards the full-screen gap, so no
+   * interstitial can follow straight after it.
+   */
+  private async coldOpen(): Promise<boolean> {
+    const away = this.coldAway;
+    this.coldAway = 0;
+    if (!away || !this.cfg.placements.app_open?.enabled) return false;
+    const startedAt = this.session.startedAt;
+    const entry = this.deps.now() - this.entry.at < 5000 ? this.entry.kind : 'launcher';
+    const d = decideAppOpen(this.cfg, this.state.counters, this.session, { ...this.ctx(), entry, backgroundMs: away });
+    if (!d.ok) {
+      this.note('app_open', d.reason);
+      return false;
+    }
+    const deadline = this.deps.now() + COLD_OPEN_WAIT_MS;
+    while (this.deps.now() < deadline) {
+      const slot = this.slots.get('app_open');
+      if (slot && this.fresh(slot)) break;
+      if (slot && slot.status === 'failed') break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    if (this.deps.now() - startedAt > COLD_OPEN_WINDOW_MS) {
+      this.note('app_open', 'too_late');
+      return false;
+    }
+    return this.showSlot('app_open', { appOpen: true });
   }
 
   /** How the person arrived (call from notification and deep-link handlers). */
@@ -432,6 +522,8 @@ export class AdsManager {
       const finish = (shown: boolean) => {
         if (done) return;
         done = true;
+        this.adShowing = false;
+        this.adClosedAt = this.deps.now();
         clearTimeout(watchdog);
         s.showing = null;
         ad.destroy();
@@ -450,6 +542,7 @@ export class AdsManager {
         if (e.type === 'closed') finish(true);
         else if (e.type === 'failed' && e.phase === 'show') finish(false);
       };
+      this.adShowing = true;
       ad.show().catch(() => finish(false));
     });
   }
@@ -469,13 +562,20 @@ export class AdsManager {
     this.setCounters(rollDay(this.state.counters, this.deps.now()));
     const b = recordBreak(this.state.counters, placement);
     this.setCounters(b.counters);
-    const d = decideBreak(this.cfg, placement, this.state.counters, this.session, this.ctx(outcome), b.count);
+    const now = this.deps.now();
+    if (this.timing) this.setTiming(timing.onBreak(this.timing));
+    // The policy decides what's allowed; the timing model can only hold an allowed ad for a better moment.
+    const policy = decideBreak(this.cfg, placement, this.state.counters, this.session, this.ctx(outcome), b.count);
+    const d = timing.gate(policy, this.timing, now, this.state.counters.lastFullscreenAt);
     if (!d.ok) {
       this.note(placement, d.reason);
-      if (d.reason === 'not_nth_break' || d.reason === 'too_soon' || d.reason === 'session_grace' || d.reason === 'rewarded_cooldown') this.prepare(placement);
+      if (this.timing) this.setTiming(timing.onBreakResult(this.timing, false, now));
+      if (d.reason === 'not_nth_break' || d.reason === 'too_soon' || d.reason === 'session_grace' || d.reason === 'rewarded_cooldown' || d.reason === 'smart_hold') this.prepare(placement);
       return false;
     }
-    return this.showSlot(placement);
+    const shown = await this.showSlot(placement);
+    if (this.timing) this.setTiming(timing.onBreakResult(this.timing, shown, this.deps.now()));
+    return shown;
   }
 
   /** A rewarded offer can be shown now (allowed and already loaded). */
